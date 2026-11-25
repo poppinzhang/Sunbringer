@@ -15,8 +15,7 @@ consume the runtime. Keeping retry and session ownership here prevents competing
   loopback). Only a failed probe replaces the socket.
 - The [registry](../../packages/client-runtime/src/connection/registry.ts) scopes connections by
   environment. An involuntary disconnect keeps the registration and cached projections; explicit
-  removal closes the scope and clears credentials, caches, and drafts. Cloud-account changes apply
-  only to relay registrations and must never discard directly paired environments.
+  removal closes the scope and clears credentials, caches, and drafts.
 
 ## HTTP authorization vs. socket lifetime
 

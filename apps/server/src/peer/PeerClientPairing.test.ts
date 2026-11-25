@@ -6,7 +6,6 @@ import {
   type AuthMcpClientAccess,
   AuthOrchestrationOperateScope,
   AuthOrchestrationReadScope,
-  AuthRelayConfigureScope,
   AuthStandardClientScopes,
   AuthTerminalOperateScope,
   type ExecutionEnvironmentDescriptor,
@@ -109,12 +108,11 @@ it.effect(
         const b = yield* serveBox();
         const a = yield* makeLaptop;
         yield* linkTo(a.links, b, "full-access");
-        // Holds less than a pairing code grants, and one scope no pairing code grants.
+        // Holds less than a pairing code grants.
         const held = [
           AuthOrchestrationReadScope,
           AuthOrchestrationOperateScope,
           AuthAccessWriteScope,
-          AuthRelayConfigureScope,
         ];
         const phone = yield* a.client(held);
 

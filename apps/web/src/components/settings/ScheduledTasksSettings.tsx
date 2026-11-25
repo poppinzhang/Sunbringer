@@ -38,7 +38,6 @@ import {
 import { scheduleTimeZoneLabel } from "@t3tools/client-runtime/scheduled-task-time-zone";
 import { scheduledTaskWorktreeBaseRef } from "@t3tools/client-runtime/scheduled-task-worktree";
 import {
-  MAX_WEBHOOK_DELIVERY_AGE_MINUTES,
   MAX_WEBHOOK_FILTERS,
   MIN_SCHEDULED_TASK_INTERVAL_MS,
   ProviderInstanceId,
@@ -56,7 +55,6 @@ import { formatRelativeTime } from "../../timestampFormat";
 import { useClientSettings, useEnvironmentSettings } from "../../hooks/useSettings";
 import { getCustomModelOptionsByInstance, selectsPlanAgent } from "../../modelSelection";
 import { providerInstanceEntriesFor } from "../../providerInstances";
-import { usePrimaryCloudLinkState } from "../../cloud/cloudLinkState";
 import { requestConfirmDialog } from "../../confirmDialog";
 import { webhookAddress } from "@t3tools/client-runtime/webhook-address";
 import { Link, useNavigate } from "@tanstack/react-router";
@@ -207,7 +205,6 @@ const EMPTY_DRAFT: DraftState = {
   signatureEnabled: false,
   ...WEBHOOK_SIGNATURE_DEFAULTS,
   signatureSecret: "",
-  maxDeliveryAgeMinutes: "",
   replayKey: "",
   coalesceKey: "",
   coalesceWindowSeconds: "",
@@ -1227,24 +1224,7 @@ function WebhookEndpointField({
         </Button>
       </div>
       {note !== null ? <p className="text-xs text-muted-foreground">{note}</p> : null}
-      {endpoint.url !== null ? <WebhookDeliveryMode environmentId={environmentId} /> : null}
     </div>
-  );
-}
-
-function WebhookDeliveryMode({ environmentId }: { readonly environmentId: EnvironmentId }) {
-  const gt = useGT();
-  const cloudLink = usePrimaryCloudLinkState();
-  if (cloudLink.target?.environmentId !== environmentId || cloudLink.data === null) return null;
-  return (
-    <p className="text-xs text-muted-foreground">
-      {cloudLink.data.holdWebhooksWhileOffline
-        ? gt("Held for up to 24 hours while this environment is offline. ")
-        : gt("Forwarded live. Requests fail while this environment is offline. ")}
-      <Link to="/settings/access" className="underline underline-offset-2">
-        <T>Change in Sharing & access</T>
-      </Link>
-    </p>
   );
 }
 
@@ -1647,7 +1627,7 @@ function ScheduledTaskEditorForm({
       reportFailure(
         gt("Once is not available here"),
         gt(
-          "This environment runs an older T3 Code. Update it to schedule a one-time task, or pick another schedule.",
+          "This environment runs an older Sunbringer. Update it to schedule a one-time task, or pick another schedule.",
         ),
       );
       return;
@@ -2075,27 +2055,6 @@ function ScheduledTaskEditorForm({
                     },
                   )}
                 </p>
-                <Field
-                  label={gt("Skip requests older than")}
-                  hint={gt("minutes, optional")}
-                  htmlFor="scheduled-task-max-age"
-                >
-                  <Input
-                    id="scheduled-task-max-age"
-                    type="number"
-                    nativeInput
-                    min={1}
-                    max={MAX_WEBHOOK_DELIVERY_AGE_MINUTES}
-                    placeholder={gt("Run every request")}
-                    value={draft.maxDeliveryAgeMinutes}
-                    onChange={(event) =>
-                      setDraft((current) => ({
-                        ...current,
-                        maxDeliveryAgeMinutes: event.target.value,
-                      }))
-                    }
-                  />
-                </Field>
                 <WebhookFiltersField
                   filters={draft.filters}
                   onChange={(filters) => setDraft((current) => ({ ...current, filters }))}

@@ -96,7 +96,7 @@ const smokeCliArchive = Effect.fn("smokeCliArchive")(function* (input: {
     });
   }
   const contentDir = path.join(scratch, root);
-  const executable = path.join(contentDir, platform === "win32" ? "t3.exe" : "t3");
+  const executable = path.join(contentDir, platform === "win32" ? "sunbringer.exe" : "sunbringer");
   const bundledLibatomic = path.join(contentDir, "lib/libatomic.so.1");
   for (const required of [
     executable,
@@ -135,9 +135,9 @@ const smokeCliArchive = Effect.fn("smokeCliArchive")(function* (input: {
     });
   }
 
-  // The service launcher loads outside the embedded CLI; without T3CODE_HOME it exits right away.
+  // The service launcher loads outside the embedded CLI; without SUNBRINGER_HOME it exits right away.
   const launcher = yield* runExecutable(executable, ["__service-launcher"], contentDir);
-  if (launcher.exitCode !== 1 || !launcher.stderr.includes("T3CODE_HOME is required")) {
+  if (launcher.exitCode !== 1 || !launcher.stderr.includes("SUNBRINGER_HOME is required")) {
     return yield* new CliArchiveSmokeError({
       step: "running __service-launcher",
       detail: `exit ${String(launcher.exitCode)}\n${launcher.stdout}${launcher.stderr}`,
@@ -159,10 +159,7 @@ const smokeCliArchive = Effect.fn("smokeCliArchive")(function* (input: {
           USERPROFILE: home,
           TMPDIR: scratch,
           TEMP: scratch,
-          T3CODE_HOME: home,
-          // The archive has a release channel built in, so its events would
-          // look like a real new install.
-          T3CODE_TELEMETRY_ENABLED: "false",
+          SUNBRINGER_HOME: home,
         },
         extendEnv: false,
       },

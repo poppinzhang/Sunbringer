@@ -212,9 +212,9 @@ describe("AntigravityAdapterV2 compaction", () => {
                 args: [mockAgentPath],
                 cwd: input.cwd,
                 env: {
-                  T3_ACP_ANTIGRAVITY: "1",
-                  T3_ACP_AVAILABLE_COMMANDS: compact ? "compact" : "",
-                  T3_ACP_REQUEST_LOG_PATH: requestLog,
+                  SUNBRINGER_ACP_ANTIGRAVITY: "1",
+                  SUNBRINGER_ACP_AVAILABLE_COMMANDS: compact ? "compact" : "",
+                  SUNBRINGER_ACP_REQUEST_LOG_PATH: requestLog,
                 },
               },
             }).pipe(
@@ -399,7 +399,7 @@ describe("AntigravityAdapterV2 client file system", () => {
               command: process.execPath,
               args: [mockAgentPath],
               cwd: input.cwd,
-              env: { T3_ACP_ANTIGRAVITY: "1", T3_ACP_REQUEST_LOG_PATH: requestLog },
+              env: { SUNBRINGER_ACP_ANTIGRAVITY: "1", SUNBRINGER_ACP_REQUEST_LOG_PATH: requestLog },
             },
           }).pipe(
             Effect.provideService(SecureRandom.SecureRandom, crypto),
@@ -560,7 +560,7 @@ describe("AntigravityAdapterV2 workspace changes", () => {
               command: process.execPath,
               args: [mockAgentPath],
               cwd: input.cwd,
-              env: { T3_ACP_ANTIGRAVITY: "1", T3_ACP_HANG_PROMPT_FOREVER: "1" },
+              env: { SUNBRINGER_ACP_ANTIGRAVITY: "1", SUNBRINGER_ACP_HANG_PROMPT_FOREVER: "1" },
             },
           }).pipe(
             Effect.provideService(SecureRandom.SecureRandom, crypto),
@@ -735,7 +735,7 @@ describe("AntigravityAdapterV2 html_render pages", () => {
               command: process.execPath,
               args: [mockAgentPath],
               cwd: input.cwd,
-              env: { T3_ACP_ANTIGRAVITY: "1" },
+              env: { SUNBRINGER_ACP_ANTIGRAVITY: "1" },
             },
           }).pipe(
             Effect.provideService(SecureRandom.SecureRandom, crypto),
@@ -1028,7 +1028,7 @@ describe("AntigravityAdapterV2 html_render pages", () => {
                 command: process.execPath,
                 args: [mockAgentPath],
                 cwd: input.cwd,
-                env: { T3_ACP_ANTIGRAVITY: "1" },
+                env: { SUNBRINGER_ACP_ANTIGRAVITY: "1" },
               },
             }).pipe(
               Effect.provideService(SecureRandom.SecureRandom, crypto),
@@ -1382,8 +1382,10 @@ const openSessionWithRunningCommand = Effect.fn("openSessionWithRunningCommand")
           args: [mockAgentPath],
           cwd: input.cwd,
           env: {
-            T3_ACP_ANTIGRAVITY: "1",
-            ...(steering === undefined ? {} : { T3_ACP_AGENT_VERSION: steering.agentVersion }),
+            SUNBRINGER_ACP_ANTIGRAVITY: "1",
+            ...(steering === undefined
+              ? {}
+              : { SUNBRINGER_ACP_AGENT_VERSION: steering.agentVersion }),
           },
         },
       }).pipe(
@@ -2101,15 +2103,18 @@ describe("AntigravityAdapterV2 work after the prompt ends", () => {
   );
 
   // agy names its background commands `<session>/task-<n>`; the agent passes that to
-  // t3_background_wait, which must not fail since the adapter already holds the run open.
-  it.effect("accepts t3_background_wait for a command it already tracks", () =>
+  // sunbringer_background_wait, which must not fail since the adapter already holds the run open.
+  it.effect("accepts sunbringer_background_wait for a command it already tracks", () =>
     Effect.gen(function* () {
       const { session, providerThread, startTurn, throughPromptSettled } =
         yield* openSessionWithRunningCommand({ WaitMsBeforeAsync: 10000 });
       yield* startTurn(1, false);
       yield* throughPromptSettled;
       const taskIds = ["mock-session-1/task-2"];
-      assert.isDefined(session.awaitBackgroundTasks, "t3_background_wait must not be unsupported");
+      assert.isDefined(
+        session.awaitBackgroundTasks,
+        "sunbringer_background_wait must not be unsupported",
+      );
       const result = yield* session.awaitBackgroundTasks!({
         providerThread,
         taskIds,
@@ -2498,7 +2503,7 @@ describe("AntigravityAdapterV2 subagent reads", () => {
               command: process.execPath,
               args: [mockAgentPath],
               cwd: input.cwd,
-              env: { T3_ACP_ANTIGRAVITY: "1" },
+              env: { SUNBRINGER_ACP_ANTIGRAVITY: "1" },
             },
           }).pipe(
             Effect.provideService(SecureRandom.SecureRandom, crypto),
@@ -2693,7 +2698,7 @@ describe("AntigravityAdapterV2 runtime mode ceiling", () => {
               command: process.execPath,
               args: [mockAgentPath],
               cwd: input.cwd,
-              env: { T3_ACP_ANTIGRAVITY: "1" },
+              env: { SUNBRINGER_ACP_ANTIGRAVITY: "1" },
             },
           }).pipe(
             Effect.provideService(SecureRandom.SecureRandom, crypto),
@@ -2767,7 +2772,7 @@ describe("AntigravityAdapterV2 runtime mode ceiling", () => {
               command: process.execPath,
               args: [mockAgentPath],
               cwd: input.cwd,
-              env: { T3_ACP_ANTIGRAVITY: "1" },
+              env: { SUNBRINGER_ACP_ANTIGRAVITY: "1" },
             },
           }).pipe(
             Effect.provideService(SecureRandom.SecureRandom, crypto),
@@ -2856,10 +2861,10 @@ describe("AntigravityAdapterV2 session system prompt", () => {
                 args: [mockAgentPath],
                 cwd: input.cwd,
                 env: {
-                  T3_ACP_ANTIGRAVITY: "1",
-                  T3_ACP_AGENT_VERSION: agentVersion,
-                  T3_ACP_REQUEST_LOG_PATH: requestLog,
-                  T3_ACP_HANG_PROMPT_FOREVER: "1",
+                  SUNBRINGER_ACP_ANTIGRAVITY: "1",
+                  SUNBRINGER_ACP_AGENT_VERSION: agentVersion,
+                  SUNBRINGER_ACP_REQUEST_LOG_PATH: requestLog,
+                  SUNBRINGER_ACP_HANG_PROMPT_FOREVER: "1",
                 },
               },
             }).pipe(
@@ -2977,7 +2982,7 @@ describe("AntigravityAdapterV2 update_steps checklist", () => {
               command: process.execPath,
               args: [mockAgentPath],
               cwd: input.cwd,
-              env: { T3_ACP_ANTIGRAVITY: "1" },
+              env: { SUNBRINGER_ACP_ANTIGRAVITY: "1" },
             },
           }).pipe(
             Effect.provideService(SecureRandom.SecureRandom, crypto),

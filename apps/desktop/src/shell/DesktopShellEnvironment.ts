@@ -122,9 +122,8 @@ const LOGIN_SHELL_ENV_NAMES = [
   "SSL_CERT_FILE",
   "SSL_CERT_DIR",
   "NODE_EXTRA_CA_CERTS",
-  "T3CODE_TELEMETRY_ENABLED",
-  "T3CODE_FEATURE_FLAGS",
-  "T3CODE_RELEASE_BASE_URL",
+  "SUNBRINGER_FEATURE_FLAGS",
+  "SUNBRINGER_RELEASE_BASE_URL",
   "__MISE_DIFF",
   "JAVA_HOME",
   "PNPM_HOME",
@@ -553,9 +552,8 @@ const installPosixEnvironment = Effect.fn("desktop.shellEnvironment.installPosix
       "NODE_EXTRA_CA_CERTS",
       "JAVA_HOME",
       "PNPM_HOME",
-      "T3CODE_TELEMETRY_ENABLED",
-      "T3CODE_FEATURE_FLAGS",
-      "T3CODE_RELEASE_BASE_URL",
+      "SUNBRINGER_FEATURE_FLAGS",
+      "SUNBRINGER_RELEASE_BASE_URL",
     ] as const) {
       if (!config.env[name] && shellEnvironment[name]) {
         config.env[name] = shellEnvironment[name];
@@ -660,9 +658,8 @@ const CACHED_ENV_NAMES = [
   "SSL_CERT_FILE",
   "SSL_CERT_DIR",
   "NODE_EXTRA_CA_CERTS",
-  "T3CODE_TELEMETRY_ENABLED",
   // The server reads its flags once at start, before discovery can finish.
-  "T3CODE_FEATURE_FLAGS",
+  "SUNBRINGER_FEATURE_FLAGS",
 ] as const;
 
 /** @public */

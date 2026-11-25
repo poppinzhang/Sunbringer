@@ -11,7 +11,7 @@ import type { HttpClient } from "effect/http";
 import * as RemoteEnvironmentAuthorization from "../authorization/service.ts";
 import type { PreparedConnection } from "../connection/model.ts";
 import { environmentEndpointUrl } from "../environment/endpoint.ts";
-import * as ManagedRelay from "../relay/managedRelay.ts";
+import * as Dpop from "../dpop/signer.ts";
 import type { RemoteEnvironmentRequestError } from "../rpc/http.ts";
 import { executeAuthenticatedEnvironmentHttpRequest } from "./environmentHttpAuth.ts";
 import type { DeviceHubAccess } from "../device/hubAccess.ts";
@@ -24,7 +24,7 @@ const TICKET_TIMEOUT_MS = 8_000;
 export const mintMediaTicket = Effect.fn("clientRuntime.state.mintMediaTicket")(function* (
   prepared: PreparedConnection,
 ) {
-  const signer = yield* Effect.serviceOption(ManagedRelay.ManagedRelayDpopSigner);
+  const signer = yield* Effect.serviceOption(Dpop.DpopSigner);
   const remoteAuthorization = yield* Effect.serviceOption(
     RemoteEnvironmentAuthorization.RemoteEnvironmentAuthorization,
   );

@@ -115,7 +115,6 @@ import {
 } from "../../provider/ClaudeCodeModelRoutes.ts";
 import { resolveProviderCatalog } from "../../provider/ModelManifest.ts";
 import * as ProviderEventLoggers from "@t3tools/provider-core/server/ProviderEventLoggers";
-import { AGENT_FEEDBACK_INSTRUCTIONS } from "@t3tools/provider-core/server/runtimeInstructions";
 import * as ProviderAdapter from "@t3tools/provider-core/server/ProviderAdapter";
 import type * as ProviderContinuationRequests from "@t3tools/provider-core/server/ProviderContinuationRequests";
 import {
@@ -824,7 +823,7 @@ describe("ClaudeAdapterV2 MCP query overrides", () => {
       .sort();
 
     // regression: #32022 Claude Plan mode asks before every non-read-only MCP call
-    assert.include(readOnlyToolNames, "mcp__t3-code__t3_background_wait");
+    assert.include(readOnlyToolNames, "mcp__t3-code__sunbringer_background_wait");
     assert.deepEqual(
       [...ClaudeAdapterV2.CLAUDE_READ_ONLY_T3_MCP_ALLOWED_TOOLS].sort(),
       readOnlyToolNames,
@@ -918,8 +917,8 @@ describe("ClaudeAdapterV2 native protocol logging", () => {
     assert.equal(systemPrompt.type, "preset");
     assert.equal(systemPrompt.preset, "claude_code");
     assert.include(systemPrompt.append ?? "", "Use `delegate_task`");
-    assert.include(systemPrompt.append ?? "", "call `t3_background_wait`");
-    assert.notInclude(systemPrompt.append ?? "", "## T3 Code devices");
+    assert.include(systemPrompt.append ?? "", "call `sunbringer_background_wait`");
+    assert.notInclude(systemPrompt.append ?? "", "## Sunbringer devices");
     const logged = ClaudeAdapterV2.loggedClaudeQueryOptions(options);
     assert.equal(logged.hasMcpServers, true);
     assert.notInclude(JSON.stringify(logged), "secret-claude-token");
@@ -940,11 +939,7 @@ describe("ClaudeAdapterV2 native protocol logging", () => {
 });
 
 describe("ClaudeAdapterV2 T3 tool instructions", () => {
-  const options = (input: {
-    readonly mcp: boolean;
-    readonly deviceToolsAvailable: boolean;
-    readonly agentFeedback?: "off" | "on-request" | "auto";
-  }) =>
+  const options = (input: { readonly mcp: boolean; readonly deviceToolsAvailable: boolean }) =>
     ClaudeAdapterV2.makeClaudeQueryOptions({
       modelSelection: {
         instanceId: ProviderInstanceId.make("claudeAgent"),
@@ -957,7 +952,6 @@ describe("ClaudeAdapterV2 T3 tool instructions", () => {
         ? { mcpServers: { "t3-code": { type: "http" as const, url: "http://127.0.0.1/mcp" } } }
         : {}),
       deviceToolsAvailable: input.deviceToolsAvailable,
-      agentFeedback: input.agentFeedback ?? "off",
       environment: {},
     });
   const append = (input: Parameters<typeof options>[0]) =>
@@ -970,19 +964,8 @@ describe("ClaudeAdapterV2 T3 tool instructions", () => {
   });
 
   it("leaves the device block out without device access or without T3 tools", () => {
-    assert.notInclude(append({ mcp: true, deviceToolsAvailable: false }), "## T3 Code devices");
-    assert.notInclude(append({ mcp: false, deviceToolsAvailable: true }), "## T3 Code devices");
-  });
-
-  it("gives the agent feedback line only to a session with T3 tools", () => {
-    const feedback = (mcp: boolean, agentFeedback: "off" | "auto") =>
-      append({ mcp, deviceToolsAvailable: false, agentFeedback }).includes("t3_feedback");
-    assert.include(
-      append({ mcp: true, deviceToolsAvailable: false, agentFeedback: "auto" }),
-      AGENT_FEEDBACK_INSTRUCTIONS.auto,
-    );
-    assert.isFalse(feedback(true, "off"));
-    assert.isFalse(feedback(false, "auto"));
+    assert.notInclude(append({ mcp: true, deviceToolsAvailable: false }), "## Sunbringer devices");
+    assert.notInclude(append({ mcp: false, deviceToolsAvailable: true }), "## Sunbringer devices");
   });
 
   it("gives native subagents the device block only in a session with device access", async () => {
@@ -1016,17 +999,6 @@ describe("ClaudeAdapterV2 T3 tool instructions", () => {
     ]);
     assert.deepEqual(await subagentContext({ mcp: true, deviceToolsAvailable: false }), []);
     assert.deepEqual(await subagentContext({ mcp: false, deviceToolsAvailable: true }), []);
-    // A custom subagent can lack T3 tools even when this session has them.
-    assert.notInclude(
-      JSON.stringify(
-        await subagentContext({
-          mcp: true,
-          deviceToolsAvailable: true,
-          agentFeedback: "auto",
-        }),
-      ),
-      "t3_feedback",
-    );
   });
 });
 
@@ -21498,7 +21470,7 @@ describe("ClaudeAdapterV2 background wake turns", () => {
 
       const routing = subagentRouting(harness.events, ["toolu-early-bash"]);
       assert.isDefined(routing.childThreadId);
-      // Agents quote this id back to t3_thread_send/t3_thread_read.
+      // Agents quote this id back to sunbringer_thread_send/sunbringer_thread_read.
       const childThreadId = routing.childThreadId ?? "";
       assert.notInclude(childThreadId, "%");
       assert.isAtMost(childThreadId.length, 64);

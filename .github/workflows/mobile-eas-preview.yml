@@ -11,6 +11,7 @@ jobs:
   ios:
     name: EAS Preview (iOS)
     if: |
+      vars.MOBILE_RELEASE == 'true' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       contains(github.event.pull_request.labels.*.name, '🚀 Mobile Continuous Deployment') &&
       (github.event.action != 'labeled' || github.event.label.name == '🚀 Mobile Continuous Deployment')
@@ -89,9 +90,9 @@ jobs:
           import { appendFileSync, readFileSync } from "node:fs";
           import { parseEnv } from "node:util";
           const env = parseEnv(readFileSync(".env.local", "utf8"));
-          const googleServicesFile = env.T3CODE_ANDROID_GOOGLE_SERVICES_FILE;
+          const googleServicesFile = env.SUNBRINGER_ANDROID_GOOGLE_SERVICES_FILE;
           if (googleServicesFile) {
-            appendFileSync(process.env.GITHUB_ENV, `T3CODE_ANDROID_GOOGLE_SERVICES_FILE=${googleServicesFile}\n`);
+            appendFileSync(process.env.GITHUB_ENV, `SUNBRINGER_ANDROID_GOOGLE_SERVICES_FILE=${googleServicesFile}\n`);
           }
           NODE
 
@@ -132,6 +133,7 @@ jobs:
   android:
     name: EAS Preview (Android)
     if: |
+      vars.MOBILE_RELEASE == 'true' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       contains(github.event.pull_request.labels.*.name, '🚀 Mobile Continuous Deployment') &&
       (github.event.action != 'labeled' || github.event.label.name == '🚀 Mobile Continuous Deployment')
@@ -210,9 +212,9 @@ jobs:
           import { appendFileSync, readFileSync } from "node:fs";
           import { parseEnv } from "node:util";
           const env = parseEnv(readFileSync(".env.local", "utf8"));
-          const googleServicesFile = env.T3CODE_ANDROID_GOOGLE_SERVICES_FILE;
+          const googleServicesFile = env.SUNBRINGER_ANDROID_GOOGLE_SERVICES_FILE;
           if (googleServicesFile) {
-            appendFileSync(process.env.GITHUB_ENV, `T3CODE_ANDROID_GOOGLE_SERVICES_FILE=${googleServicesFile}\n`);
+            appendFileSync(process.env.GITHUB_ENV, `SUNBRINGER_ANDROID_GOOGLE_SERVICES_FILE=${googleServicesFile}\n`);
           }
           NODE
 

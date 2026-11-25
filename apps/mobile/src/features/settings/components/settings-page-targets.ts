@@ -1,7 +1,6 @@
 /** Settings pages a Settings row opens. */
 export const SETTINGS_PAGE_TARGETS = [
   "SettingsEnvironments",
-  "SettingsNotifications",
   "SettingsThreads",
   "SettingsAbout",
   "SettingsArchive",
@@ -27,5 +26,3 @@ export const SETTINGS_PAGE_TARGETS = [
 ] as const;
 
 export type SettingsPageTarget = (typeof SETTINGS_PAGE_TARGETS)[number];
-
-export type SettingsLegalDocumentTarget = "SettingsLegal";

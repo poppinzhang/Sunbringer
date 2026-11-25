@@ -498,8 +498,8 @@ it.live.each(["pooled", "exclusive"] as const)(
                             parentItemId: null,
                             ordinal: 1,
                             status: "running",
-                            title: "t3_worktree_handoff",
-                            toolName: "t3-code.t3_worktree_handoff",
+                            title: "sunbringer_worktree_handoff",
+                            toolName: "t3-code.sunbringer_worktree_handoff",
                             input: {},
                             output: null,
                             startedAt: now,
@@ -597,7 +597,7 @@ it.live.each(["pooled", "exclusive"] as const)(
             Stream.runDrain,
             Effect.forkScoped,
           );
-        // What t3_worktree_handoff dispatches while the calling turn is still running.
+        // What sunbringer_worktree_handoff dispatches while the calling turn is still running.
         const bound = yield* orchestrator.dispatch({
           type: "thread.metadata.update",
           commandId: CommandId.make("command:workspace-handoff:rebind"),

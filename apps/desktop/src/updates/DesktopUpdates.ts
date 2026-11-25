@@ -1,5 +1,4 @@
 import {
-  DESKTOP_UPDATE_RESTART_MARKER_FILE,
   DESKTOP_UPDATE_IN_PROGRESS_MARKER_FILE,
   DESKTOP_UPDATE_IN_PROGRESS_TTL_MS,
   DesktopUpdateChannelSchema,
@@ -362,7 +361,7 @@ function getAutoUpdateDisabledReason(args: {
     return "Automatic updates are only available in packaged production builds.";
   }
   if (args.disabledByEnv) {
-    return "Automatic updates are disabled by the T3CODE_DISABLE_AUTO_UPDATE setting.";
+    return "Automatic updates are disabled by the SUNBRINGER_DISABLE_AUTO_UPDATE setting.";
   }
   if (args.platform === "linux" && !args.appImage && !args.isDebPackage) {
     return "Automatic updates on Linux require the AppImage or the .deb package.";
@@ -756,22 +755,10 @@ export const make = Effect.gen(function* () {
     );
   });
 
-  const updateRestartMarkerDir = environment.path.join(environment.baseDir, "runtime");
-  const updateRestartMarkerPath = environment.path.join(
-    updateRestartMarkerDir,
-    DESKTOP_UPDATE_RESTART_MARKER_FILE,
-  );
-  const writeUpdateRestartMarker = fileSystem
-    .makeDirectory(updateRestartMarkerDir, { recursive: true })
-    .pipe(
-      Effect.andThen(fileSystem.writeFileString(updateRestartMarkerPath, "")),
-      Effect.catch((error) =>
-        logUpdaterWarning("Could not write the update restart marker.", { errorTag: error._tag }),
-      ),
-    );
+  const updateMarkerDir = environment.path.join(environment.baseDir, "runtime");
 
   const updateInProgressMarkerPath = environment.path.join(
-    updateRestartMarkerDir,
+    updateMarkerDir,
     DESKTOP_UPDATE_IN_PROGRESS_MARKER_FILE,
   );
   const encodeUpdateMarker = Schema.encodeEffect(
@@ -784,6 +771,7 @@ export const make = Effect.gen(function* () {
       startedAt,
       expiresAt: startedAt + DESKTOP_UPDATE_IN_PROGRESS_TTL_MS,
     });
+    yield* fileSystem.makeDirectory(updateMarkerDir, { recursive: true });
     yield* fileSystem.writeFileString(updateInProgressTempPath, contents);
     yield* fileSystem.rename(updateInProgressTempPath, updateInProgressMarkerPath);
   }).pipe(
@@ -798,13 +786,8 @@ export const make = Effect.gen(function* () {
     .remove(updateInProgressMarkerPath, { force: true })
     .pipe(Effect.ignore);
 
-  // Failed or interrupted installs leave no replacement backend; later quits must release the tunnel.
-  const removeUpdateRestartMarker = fileSystem
-    .remove(updateRestartMarkerPath, { force: true })
-    .pipe(Effect.ignore);
-
   const installRecordPath = environment.path.join(
-    updateRestartMarkerDir,
+    updateMarkerDir,
     DESKTOP_UPDATE_INSTALL_RECORD_FILE,
   );
   const writeInstallRecord = (targetVersion: string) =>
@@ -852,7 +835,6 @@ export const make = Effect.gen(function* () {
       finishUpdateAction("install"),
       Ref.set(desktopState.quitting, false),
       Ref.set(installRunningBackendsRef, []),
-      removeUpdateRestartMarker,
       removeUpdateInProgressMarker,
       removeInstallRecord,
     ],
@@ -870,7 +852,6 @@ export const make = Effect.gen(function* () {
     if (!ownsRecovery) return;
 
     yield* Ref.set(desktopState.quitting, false);
-    yield* removeUpdateRestartMarker;
     yield* removeUpdateInProgressMarker;
     yield* removeInstallRecord;
     yield* Effect.gen(function* () {
@@ -934,7 +915,6 @@ export const make = Effect.gen(function* () {
         yield* Ref.set(installRunningBackendsRef, []);
 
         return yield* Effect.gen(function* () {
-          yield* writeUpdateRestartMarker;
           yield* writeUpdateInProgressMarker;
           const { downloadedVersion } = yield* Ref.get(updateStateRef);
           if (downloadedVersion !== null) yield* writeInstallRecord(downloadedVersion);
@@ -1411,7 +1391,7 @@ export const make = Effect.gen(function* () {
       if (Option.isSome(channelBlockedReason(nextChannel))) {
         return yield* new DesktopUpdateChannelManagedError({
           channel: nextChannel,
-          policyMessage: policy.message ?? "Your administrator manages T3 Code updates.",
+          policyMessage: policy.message ?? "Your administrator manages Sunbringer updates.",
         });
       }
       // A background check holds the updater only briefly, so wait it out instead of refusing.

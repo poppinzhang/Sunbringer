@@ -34,8 +34,8 @@ const layerEnvironment = (input: {
       Layer.mergeAll(
         NodeServices.layer,
         DesktopConfig.layerTest({
-          T3CODE_HOME: input.baseDir,
-          T3CODE_MODE: "desktop",
+          SUNBRINGER_HOME: input.baseDir,
+          SUNBRINGER_MODE: "desktop",
         }),
       ),
     ),
@@ -130,7 +130,7 @@ describe("DesktopWslServerTree", () => {
         const dep = yield* fileSystem.exists(path.join(root, "node_modules/effect/package.json"));
         assert.isTrue(dep);
         const marker = yield* fileSystem.readFileString(
-          path.join(root, "t3code-wsl-server-tree.json"),
+          path.join(root, "sunbringer-wsl-server-tree.json"),
         );
         assert.include(marker, '"version":"1.2.3"');
       }),

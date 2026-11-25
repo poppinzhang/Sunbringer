@@ -9,7 +9,6 @@ tools:
 include:
   - "apps/**/*.ts"
   - "packages/**/*.ts"
-  - "infra/**/*.ts"
 exclude:
   - "**/*.test.ts"
 requires:

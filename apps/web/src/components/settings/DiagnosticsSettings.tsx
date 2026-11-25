@@ -1094,7 +1094,7 @@ function DiagnosticsSettingsBody() {
             label={gt("CPU Time")}
             value={resourceData ? formatCpuTime(resourceData.totalCpuSecondsApprox, m) : "..."}
             tooltip={gt(
-              "Approximate active CPU time for the T3 server root process and its descendants during the selected window. It grows only while sampled processes use CPU and older samples leave as the window moves.",
+              "Approximate active CPU time for the Sunbringer server root process and its descendants during the selected window. It grows only while sampled processes use CPU and older samples leave as the window moves.",
             )}
           />
           <StatBlock

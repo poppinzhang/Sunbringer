@@ -1,10 +1,6 @@
 import * as NodePlatformCrypto from "@effect/platform-node/NodeCrypto";
 import * as NodeServices from "@effect/platform-node/NodeServices";
-import {
-  authScopeResponse,
-  AuthAdministrativeClientScopes,
-  connectDeviceVerificationCode,
-} from "@t3tools/contracts";
+import { authScopeResponse, AuthStandardClientScopes } from "@t3tools/contracts";
 import { expect, it } from "@effect/vitest";
 import * as DateTime from "effect/DateTime";
 import * as Effect from "effect/Effect";
@@ -108,9 +104,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodePlatformCrypto.layer))(
         const authenticated = yield* serverAuth.authenticateHttpRequest(request);
         expect(devExchange.cookieName).toMatch(/^t3_dev_session_/);
         expect(devExchange.expireNormalCookie).toBe(true);
-        expect(devExchange.response).toMatchObject(
-          authScopeResponse(AuthAdministrativeClientScopes),
-        );
+        expect(devExchange.response).toMatchObject(authScopeResponse(AuthStandardClientScopes));
         expect(authenticated.scopes).toEqual(["orchestration:read"]);
       }).pipe(
         Effect.provide(
@@ -270,7 +264,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodePlatformCrypto.layer))(
           (yield* serverAuth.createBrowserSession(recovery.credential, requestMetadata)).response,
         ).toMatchObject({
           authenticated: true,
-          ...authScopeResponse(AuthAdministrativeClientScopes),
+          ...authScopeResponse(AuthStandardClientScopes),
         });
       }).pipe(
         Effect.provide(
@@ -309,119 +303,6 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodePlatformCrypto.layer))(
 
         expect(verified.sessionId).toBe(bearer.sessionId);
       }).pipe(Effect.provide(layerEnvironmentAuth({ mode: "web", host: "192.168.1.50" }))),
-    );
-
-    it.effect(
-      "holds an untrusted T3 Connect device until it is approved, and revocation cuts it off",
-      () =>
-        Effect.gen(function* () {
-          const serverAuth = yield* EnvironmentAuth.EnvironmentAuth;
-          const deviceKey = "Kq3vZ8sYbTn0eW1pLr5uXc7dHf9gJm2aQs4tVw6yBzE";
-          const admin = yield* serverAuth.issueSession({ label: "Owner" });
-          const exchange = (credential: string) =>
-            serverAuth.exchangeBootstrapCredentialForAccessToken(
-              credential,
-              undefined,
-              requestMetadata,
-              { proofKeyThumbprint: deviceKey },
-            );
-
-          // Relay mints can arrive together; they must share one request and one code.
-          const mint = serverAuth.issueConnectCredential({
-            proofKeyThumbprint: deviceKey,
-            requireApproval: true,
-          });
-          const [requested, concurrent] = yield* Effect.all([mint, mint], {
-            concurrency: "unbounded",
-          });
-          expect(concurrent.credential).toBe(requested.credential);
-          expect((yield* exchange(requested.credential).pipe(Effect.flip))._tag).toBe(
-            "ServerAuthConnectApprovalPendingError",
-          );
-          const [request] = (yield* serverAuth.listPairingLinks()).filter(
-            (link) => link.connectDeviceRequest !== undefined,
-          );
-          expect(request?.connectDeviceRequest).toEqual({
-            verificationCode: connectDeviceVerificationCode(deviceKey),
-            client: requestMetadata,
-          });
-          // A retry through the relay keeps the one request the approver is looking at.
-          const retried = yield* serverAuth.issueConnectCredential({
-            proofKeyThumbprint: deviceKey,
-            requireApproval: true,
-          });
-          expect(retried.credential).toBe(requested.credential);
-
-          expect(yield* serverAuth.approveConnectDevice(request!.id)).toBe(true);
-          // A stale prompt on another client must not report denying an approved device.
-          expect(yield* serverAuth.revokePairingLink(request!.id)).toBe(false);
-          expect(
-            (yield* serverAuth.listPairingLinks()).some((link) => link.connectDeviceRequest),
-          ).toBe(false);
-          yield* exchange(requested.credential);
-          expect(
-            (yield* serverAuth.listConnectDevices()).map((device) => device.proofKeyThumbprint),
-          ).toEqual([deviceKey]);
-
-          const refreshed = yield* serverAuth.issueConnectCredential({
-            proofKeyThumbprint: deviceKey,
-            requireApproval: true,
-          });
-          yield* exchange(refreshed.credential);
-
-          const deviceSessions = () =>
-            serverAuth
-              .listClientSessions(admin.sessionId)
-              .pipe(
-                Effect.map((sessions) =>
-                  sessions.filter(
-                    (session) => session.subject === EnvironmentAuth.CLOUD_CONNECT_SUBJECT,
-                  ),
-                ),
-              );
-          // A credential minted before revocation must not let the device back in afterwards.
-          const unspent = yield* serverAuth.issueConnectCredential({
-            proofKeyThumbprint: deviceKey,
-            requireApproval: true,
-          });
-          const [oldestDeviceSession, newestDeviceSession] = yield* deviceSessions();
-          expect(newestDeviceSession).toBeDefined();
-          // Authorized clients lists T3 Connect sessions under this name.
-          expect(newestDeviceSession?.client.label).toBe("T3 Connect");
-          // Revoking any one of the device's sessions ends all of them and its trust.
-          expect(
-            yield* serverAuth.revokeClientSession(admin.sessionId, oldestDeviceSession!.sessionId),
-          ).toBe(true);
-          expect(yield* deviceSessions()).toEqual([]);
-          expect(yield* serverAuth.listConnectDevices()).toEqual([]);
-          expect((yield* exchange(unspent.credential).pipe(Effect.flip))._tag).toBe(
-            "ServerAuthInvalidCredentialError",
-          );
-          expect(yield* serverAuth.listConnectDevices()).toEqual([]);
-          const afterRevoke = yield* serverAuth.issueConnectCredential({
-            proofKeyThumbprint: deviceKey,
-            requireApproval: true,
-          });
-          expect((yield* exchange(afterRevoke.credential).pipe(Effect.flip))._tag).toBe(
-            "ServerAuthConnectApprovalPendingError",
-          );
-          // Deny sticks: retries get the dead request back instead of a fresh prompt.
-          const [denied] = (yield* serverAuth.listPairingLinks()).filter(
-            (link) => link.connectDeviceRequest !== undefined,
-          );
-          expect(yield* serverAuth.revokePairingLink(denied!.id)).toBe(true);
-          const afterDeny = yield* serverAuth.issueConnectCredential({
-            proofKeyThumbprint: deviceKey,
-            requireApproval: true,
-          });
-          expect(afterDeny.credential).toBe(afterRevoke.credential);
-          expect((yield* exchange(afterDeny.credential).pipe(Effect.flip))._tag).toBe(
-            "ServerAuthInvalidCredentialError",
-          );
-          expect(
-            (yield* serverAuth.listPairingLinks()).some((link) => link.connectDeviceRequest),
-          ).toBe(false);
-        }).pipe(Effect.provide(layerEnvironmentAuth())),
     );
 
     it.effect("renews a pairing-link DPoP session in place while its device keeps using it", () =>
@@ -496,22 +377,9 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodePlatformCrypto.layer))(
         expect(yield* refused(renewed.access_token, other.thumbprint)).toBe(
           "ServerAuthInvalidCredentialError",
         );
-        // Bearer and T3 Connect sessions keep their fixed lifetimes, so unlinking still cuts off.
+        // Bearer sessions keep their fixed lifetime.
         const bearer = yield* pair();
         expect(yield* refused(bearer.access_token, key.thumbprint)).toBe(
-          "ServerAuthInvalidCredentialError",
-        );
-        const connect = yield* serverAuth.issueConnectCredential({
-          proofKeyThumbprint: key.thumbprint,
-          requireApproval: false,
-        });
-        const connected = yield* serverAuth.exchangeBootstrapCredentialForAccessToken(
-          connect.credential,
-          undefined,
-          requestMetadata,
-          { proofKeyThumbprint: key.thumbprint },
-        );
-        expect(yield* refused(connected.access_token, key.thumbprint)).toBe(
           "ServerAuthInvalidCredentialError",
         );
 
@@ -536,7 +404,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodePlatformCrypto.layer))(
         const day = 24 * 60 * 60 * 1000;
         const issue = (peerLink: boolean) =>
           serverAuth.issueMcpClientSession({
-            label: peerLink ? "T3 Code · A" : "ChatGPT",
+            label: peerLink ? "Sunbringer · A" : "ChatGPT",
             access: "auto",
             peerLink,
             client: requestMetadata,
@@ -757,7 +625,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodePlatformCrypto.layer))(
         const paired = yield* serverAuth.exchangeBootstrapCredentialForAccessToken(
           pairing.credential,
           undefined,
-          { ...requestMetadata, label: "T3 Code Desktop" },
+          { ...requestMetadata, label: "Sunbringer Desktop" },
         );
         const first = yield* serverAuth.exchangeBootstrapCredentialForAccessToken(
           "desktop-bootstrap-token",
@@ -824,7 +692,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodePlatformCrypto.layer))(
           makeCookieRequest(sessions.cookieName, exchanged.sessionToken),
         );
 
-        expect(verified.scopes).toEqual(AuthAdministrativeClientScopes);
+        expect(verified.scopes).toEqual(AuthStandardClientScopes);
         expect(verified.subject).toBe("administrative-bootstrap");
       }).pipe(Effect.provide(layerEnvironmentAuth())),
     );
@@ -984,7 +852,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodePlatformCrypto.layer))(
           origin: "https://box.tail1234.ts.net",
           "x-forwarded-host": "box.tail1234.ts.net",
         });
-        yield* upgrade({ origin: "t3code://app" });
+        yield* upgrade({ origin: "sunbringer://app" });
         yield* upgrade({ origin: "http://localhost:5733" });
         yield* upgrade({});
 

@@ -138,11 +138,11 @@ export function spawnWindowsRemoval(environment: NodeJS.ProcessEnv, dir: string)
       "/v:off",
       "/s",
       "/c",
-      '""%T3_UNINSTALL_PING%" -n 3 127.0.0.1 >nul & rmdir /s /q "%T3_UNINSTALL_RUNTIME%""',
+      '""%SUNBRINGER_UNINSTALL_PING%" -n 3 127.0.0.1 >nul & rmdir /s /q "%SUNBRINGER_UNINSTALL_RUNTIME%""',
     ],
     {
       cwd: NodePath.win32.dirname(ping),
-      env: { ...process.env, T3_UNINSTALL_PING: ping, T3_UNINSTALL_RUNTIME: dir },
+      env: { ...process.env, SUNBRINGER_UNINSTALL_PING: ping, SUNBRINGER_UNINSTALL_RUNTIME: dir },
       windowsVerbatimArguments: true,
       detached: true,
       stdio: "ignore",
@@ -194,7 +194,7 @@ export const uninstallCommand = Command.make("uninstall", {
   ),
 }).pipe(
   Command.withDescription(
-    "Remove t3 from this machine: the background service, the launcher, and every downloaded version. Your projects and threads are kept.",
+    "Remove sunbringer from this machine: the background service, the launcher, and every downloaded version. Your projects and threads are kept.",
   ),
   Command.withHandler((flags) =>
     Effect.gen(function* () {
@@ -211,7 +211,7 @@ const logOtherHomeService = (plan: UninstallPlan) =>
   plan.otherHomeService === undefined
     ? Effect.void
     : Console.log(
-        `The T3 Code service serves ${plan.otherHomeService}, so it was not removed. Pass \`${BootService.formatBootServiceBaseDirOption(plan.otherHomeService)}\` to remove it.`,
+        `The Sunbringer service serves ${plan.otherHomeService}, so it was not removed. Pass \`${BootService.formatBootServiceBaseDirOption(plan.otherHomeService)}\` to remove it.`,
       );
 
 const runUninstall = Effect.fn("cli.uninstall.run")(function* (input: {
@@ -225,10 +225,10 @@ const runUninstall = Effect.fn("cli.uninstall.run")(function* (input: {
   const plan = yield* planUninstall({ baseDir: input.baseDir });
 
   if (!plan.service && plan.launchers.length === 0 && plan.runtimeDir === undefined) {
-    yield* Console.log(`Nothing to remove: t3 is not installed for ${input.baseDir}.`);
+    yield* Console.log(`Nothing to remove: sunbringer is not installed for ${input.baseDir}.`);
     if (!(yield* HostProcess.IsExecutable)) {
       yield* Console.log(
-        "  This t3 runs from a Node script, so it was installed by npm or built from source. Remove it the same way (`npm uninstall -g t3`, or delete the checkout).",
+        "  This sunbringer runs from a Node script, so it was installed by npm or built from source. Remove it the same way (`npm uninstall -g sunbringer`, or delete the checkout).",
       );
     }
     yield* logOtherHomeService(plan);
@@ -253,7 +253,7 @@ const runUninstall = Effect.fn("cli.uninstall.run")(function* (input: {
       });
     }
     const confirmed = yield* Prompt.run(
-      Prompt.Confirm({ message: "Remove t3 from this machine?", initial: false }),
+      Prompt.Confirm({ message: "Remove sunbringer from this machine?", initial: false }),
     ).pipe(Effect.catchTags({ QuitError: () => Effect.succeed(false) }));
     if (!confirmed) {
       yield* Console.log("Left as is.");
@@ -263,14 +263,14 @@ const runUninstall = Effect.fn("cli.uninstall.run")(function* (input: {
 
   // The prompt can wait a long time; keep a service or launcher that changed hands meanwhile.
   if (plan.service && (yield* service.status).otherBaseDir !== undefined) {
-    yield* Console.log("Left the background service: it now serves another T3 home.");
+    yield* Console.log("Left the background service: it now serves another Sunbringer home.");
   } else if (plan.service) {
     yield* service.uninstall;
     yield* Console.log("Removed the background service.");
   }
   for (const launcher of plan.launchers) {
     if (!(yield* ownsLauncher(launcher, plan.versionsDir))) {
-      yield* Console.log(`Left ${launcher}: it no longer runs this t3.`);
+      yield* Console.log(`Left ${launcher}: it no longer runs this sunbringer.`);
       continue;
     }
     yield* fs
@@ -293,7 +293,7 @@ const runUninstall = Effect.fn("cli.uninstall.run")(function* (input: {
       yield* awaitDetachedSpawn(() => spawnWindowsRemoval(environment, runtimeDir)).pipe(
         Effect.mapError(notScheduled),
       );
-      yield* Console.log(`${runtimeDir} will be removed once t3 exits.`);
+      yield* Console.log(`${runtimeDir} will be removed once sunbringer exits.`);
     } else {
       yield* fs
         .remove(plan.runtimeDir, { recursive: true, force: true })
@@ -306,6 +306,6 @@ const runUninstall = Effect.fn("cli.uninstall.run")(function* (input: {
     }
   }
   yield* Console.log("");
-  yield* Console.log("t3 is uninstalled. Thanks for trying T3 Code.");
+  yield* Console.log("sunbringer is uninstalled. Thanks for trying Sunbringer.");
   yield* logOtherHomeService(plan);
 });

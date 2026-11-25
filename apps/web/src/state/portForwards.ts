@@ -67,7 +67,7 @@ export const canForwardPorts = (environment: {
 
 /**
  * Whether the environment runs on another machine. A saved route can still lead back to this
- * computer (its own Tailscale address, a relay), where a forward would only loop.
+ * computer (its own Tailscale address, a proxy), where a forward would only loop.
  */
 export type ForwardLocality = "remote" | "local" | "pending" | "unknown";
 

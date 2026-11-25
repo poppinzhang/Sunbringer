@@ -183,14 +183,12 @@ test("the store build record job runs the workflow's own action and passes the b
   assert.match(record, /^ {10}commit: \$\{\{ inputs\.sha \}\}$/m);
 });
 
-test("release deploys give the Vercel token to the deploy step only", () => {
-  const all = jobs("workflows/release.yml");
-  for (const name of ["build_web", "build_marketing"]) {
-    assert.doesNotMatch(all[name].split(/^ {4}steps:\n/m)[0], /secrets\.VERCEL/);
-    const withToken = steps(all[name]).filter((step) => step.includes("secrets.VERCEL_TOKEN"));
-    assert.equal(withToken.length, 1);
-    assert.match(withToken[0], /name: Build staged deployment/);
-  }
+test("the release web deploy gives the Vercel token to the deploy step only", () => {
+  const { build_web: buildWeb } = jobs("workflows/release.yml");
+  assert.doesNotMatch(buildWeb.split(/^ {4}steps:\n/m)[0], /secrets\.VERCEL/);
+  const withToken = steps(buildWeb).filter((step) => step.includes("secrets.VERCEL_TOKEN"));
+  assert.equal(withToken.length, 1);
+  assert.match(withToken[0], /name: Build staged deployment/);
 });
 
 test("the version override token covers this repository only", () => {
@@ -299,7 +297,7 @@ test("a fork preview label removed before the run builds nothing", async () => {
 test("a version override rewrites only the app version", () => {
   const config = read("../apps/mobile/app.config.ts");
   const next = setMobileVersion(config, "9.8.7");
-  assert.match(next, /^ {2}version: repoEnv\.T3CODE_MOBILE_VERSION \?\? "9\.8\.7",$/m);
+  assert.match(next, /^ {2}version: repoEnv\.SUNBRINGER_MOBILE_VERSION \?\? "9\.8\.7",$/m);
   assert.equal(setMobileVersion(next, "9.8.7"), next);
   assert.deepEqual(
     next.split("\n").filter((line, index) => line !== config.split("\n")[index]).length,

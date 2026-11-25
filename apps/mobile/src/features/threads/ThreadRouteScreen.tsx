@@ -992,7 +992,6 @@ function ThreadRouteContent(
     {
       connectionError: retryConnectionError,
       connectionState: routeConnectionState,
-      connectionAwaitingApproval: routeEnvironmentRuntime?.connectionAwaitingApproval === true,
     },
     m,
   );
@@ -1055,11 +1054,7 @@ function ThreadRouteContent(
           selectedThread={selectedThreadWithDraftSettings ?? selectedThread}
           selectedThreadDetailRef={selectedThreadDetailRef}
           contentPresentation={contentPresentation}
-          screenTone={connectionTone(
-            routeConnectionState,
-            routeEnvironmentRuntime?.connectionAwaitingApproval === true,
-            m,
-          )}
+          screenTone={connectionTone(routeConnectionState, m)}
           connectionError={routeConnectionError}
           environmentLabel={selectedEnvironmentConnection?.environmentLabel ?? null}
           feedbackSubmissions={composer.feedbackSubmissions}

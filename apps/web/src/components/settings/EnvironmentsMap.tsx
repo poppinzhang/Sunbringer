@@ -12,7 +12,6 @@ import {
   linkableMachines,
   offersLinkedEnvironments,
 } from "@t3tools/client-runtime/link-request";
-import { thrownErrorMessage } from "@t3tools/client-runtime/errors";
 import type { PeerLinkHealth } from "@t3tools/client-runtime/state/peerLinks";
 import { AuthAccessWriteScope, type EnvironmentId } from "@t3tools/contracts";
 import * as DateTime from "effect/DateTime";
@@ -23,7 +22,6 @@ import {
   ArrowUpDownIcon,
   CheckIcon,
   CircleHelpIcon,
-  CloudIcon,
   GlobeIcon,
   MaximizeIcon,
   MinusIcon,
@@ -48,25 +46,17 @@ import {
   useState,
 } from "react";
 
-import { hasCloudPublicConfig } from "~/cloud/publicConfig";
 import { isElectron } from "~/env";
 import { useLiveRefresh } from "~/hooks/useLiveRefresh";
 import { useNowMinute } from "~/hooks/useNowMinute";
 import { useStableCallback } from "~/hooks/useStableCallback";
 import { observeResize } from "~/lib/observeResize";
 import { cn } from "~/lib/utils";
-import {
-  type EnvironmentPresentation,
-  useEnvironments,
-  useRelayEnvironmentDiscovery,
-  useRetainedRelayEnvironments,
-} from "~/state/environments";
+import { type EnvironmentPresentation, useEnvironments } from "~/state/environments";
 import { environmentIdsKey } from "~/state/environmentAtomList";
 import { peerLinkEnvironment, peerLinkListsAtom, usePeerLinkHosts } from "~/state/peerLinks";
 import { formatEnvironmentQueryError } from "~/state/query";
-import { relayEnvironmentDiscovery } from "~/state/relay";
 import { preparedConnectionsAtom, useEnvironmentsWithScope } from "~/state/session";
-import { useAtomCommand } from "~/state/use-atom-command";
 import { accessConfig } from "../auth/ConnectAgentSurface";
 import { connectionPhaseDotClassName } from "../ConnectionStatusDot";
 import { EnvironmentMachineIcon } from "../EnvironmentMachineIcon";
@@ -108,7 +98,6 @@ import {
   type FleetLinkAction,
   type FleetLinkEdge,
   type FleetLinkOffer,
-  type FleetNode,
   type FleetRect,
   type FleetRouteEdge,
   type FleetRouteState,
@@ -199,13 +188,10 @@ const ROUTE_STYLES: Record<
     dash: "4 4",
     pill: "border-dashed border-destructive/60 text-destructive",
   },
-  offered: { wire: "text-muted-foreground/50", width: 1, dash: "1 4", pill: "border-dotted" },
 };
 
 function routeKindLabel(kind: ConnectionRouteKind, gt: GT): string {
   switch (kind) {
-    case "relay":
-      return "T3 Connect";
     case "loopback":
       return gt("This device");
     case "lan":
@@ -235,35 +221,7 @@ function routeStateLabel(state: FleetRouteState, gt: GT): string {
       return gt("Not in use");
     case "refused":
       return gt("Sign-in refused");
-    case "offered":
-      return gt("Not added");
   }
-}
-
-/** Asks T3 Connect for the account's machines once, as the list's own rows do on mount. */
-function useConnectMachines() {
-  const gt = useGT();
-  const m = useMessages();
-  const discovery = useRelayEnvironmentDiscovery();
-  const refresh = useAtomCommand(relayEnvironmentDiscovery.refresh, { reportFailure: false });
-  const discoverIfUnasked = useEffectEvent(() => {
-    if (hasCloudPublicConfig() && !discovery.listed && !discovery.refreshing) void refresh();
-  });
-  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- one T3 Connect listing when the map mounts, the request the list makes on mount
-  useEffect(() => {
-    discoverIfUnasked();
-  }, []);
-  const machines = useRetainedRelayEnvironments();
-  // A failed listing is not an account with no machines: say so, with a way to ask again.
-  const message = discovery.refreshing
-    ? null
-    : discovery.offline && !discovery.listed
-      ? gt("You appear to be offline.")
-      : thrownErrorMessage(Option.getOrNull(discovery.error), m);
-  return {
-    machines,
-    problem: message === null ? null : { message, retry: () => void refresh() },
-  };
 }
 
 function useFleetGraph() {
@@ -293,12 +251,10 @@ function useFleetGraph() {
     ),
   );
   const writable = useEnvironmentsWithScope(environments, AuthAccessWriteScope);
-  const { machines: connect, problem: connectProblem } = useConnectMachines();
   const machines = linkableMachines({
     environments,
     threadEnvironmentId: null,
     links: [],
-    connect,
   });
   const machineById = new Map(machines.map((machine) => [machine.environmentId, machine]));
   const listByHost = new Map(hosts.map((host, index) => [host.environmentId, lists[index]]));
@@ -339,17 +295,9 @@ function useFleetGraph() {
   const graph = buildFleetGraph({
     clientLabel: isElectron ? gt("This device") : gt("This browser"),
     environments: inputs,
-    connectMachines: machines
-      .filter((machine) => machine.connectOnly)
-      .map((machine) => ({
-        environmentId: machine.environmentId,
-        label: machine.label,
-        machine: machine.machine,
-        availability: connect.get(machine.environmentId)?.availability ?? "checking",
-      })),
     now: DateTime.makeUnsafe(nowMinute),
   });
-  return { graph, environments, connectProblem };
+  return { graph, environments };
 }
 
 /**
@@ -395,12 +343,11 @@ type CodeOnlyDrop = Extract<FleetLinkAction, { kind: "code-only" }>;
  * Selecting a machine shows the controls the list has for it.
  */
 export function EnvironmentsMap(
-  props: Pick<
-    FleetDetailsProps,
-    "renderSavedEnvironment" | "renderConnectMachine" | "onAddEnvironment"
-  > & { readonly footerId?: string },
+  props: Pick<FleetDetailsProps, "renderSavedEnvironment" | "onAddEnvironment"> & {
+    readonly footerId?: string;
+  },
 ) {
-  const { graph, environments, connectProblem } = useFleetGraph();
+  const { graph, environments } = useFleetGraph();
   const [expanded, setExpanded] = useState(NO_STACKS);
   const stacks = fleetStacks(graph, expanded);
   const key = fleetShapeKey(graph, stacks);
@@ -540,7 +487,6 @@ export function EnvironmentsMap(
           graph={graph}
           stacks={stacks}
           environments={environments}
-          connectProblem={connectProblem}
           selection={selection}
           found={found}
           onSelect={select}
@@ -1144,9 +1090,7 @@ function connectionStateText(
     case "connecting":
       return gt("Connecting…");
     case "reconnecting":
-      return environment?.connection.awaitingApproval
-        ? gt("Waiting for approval")
-        : gt("Reconnecting…");
+      return gt("Reconnecting…");
     case "unsupported":
       return gt("Client not supported");
     case "error":
@@ -1179,22 +1123,6 @@ function environmentStatusText(
       return gt("{count, plural, =0 {No links out} one {# link out} other {# links out}}", {
         count: linkCount,
       });
-  }
-}
-
-function connectAvailabilityText(
-  availability: Extract<FleetNode, { kind: "connect" }>["availability"],
-  gt: GT,
-): string {
-  switch (availability) {
-    case "online":
-      return gt("Relay online");
-    case "offline":
-      return gt("Relay offline");
-    case "checking":
-      return gt("Checking relay status…");
-    case "error":
-      return gt("Relay status unavailable");
   }
 }
 
@@ -1323,8 +1251,6 @@ function foldGroupLabel(group: FleetFoldGroup, gt: GT): string {
       return gt("Need an update", {
         $context: "environments running a version this app cannot talk to",
       });
-    case "not-added":
-      return gt("Not added");
   }
 }
 
@@ -2080,10 +2006,7 @@ const FleetScene = memo(function FleetScene({
         }
         if (rect.height < 32) {
           // Inside an open group of environments: its name and state; the details have the rest.
-          const state =
-            node.kind === "connect"
-              ? connectAvailabilityText(node.availability, gt)
-              : connectionStateText(node, environmentById.get(node.id), false, gt);
+          const state = connectionStateText(node, environmentById.get(node.id), false, gt);
           return (
             <button
               key={node.id}
@@ -2098,42 +2021,10 @@ const FleetScene = memo(function FleetScene({
                 aria-hidden
                 className={cn(
                   "size-2 shrink-0 rounded-full",
-                  node.kind === "environment" && node.enabled
-                    ? connectionPhaseDotClassName(node.phase)
-                    : "bg-muted-foreground/40",
+                  node.enabled ? connectionPhaseDotClassName(node.phase) : "bg-muted-foreground/40",
                 )}
               />
               <span className="truncate text-2xs leading-none">{node.label}</span>
-            </button>
-          );
-        }
-        if (node.kind === "connect") {
-          const status = `${gt("Not added")} · ${connectAvailabilityText(node.availability, gt)}`;
-          return (
-            <button
-              key={node.id}
-              {...focusProps(
-                target,
-                rect,
-                gt("{label}, on your T3 Connect account, not added to this app. {status}", {
-                  label: node.label,
-                  status: connectAvailabilityText(node.availability, gt),
-                }),
-              )}
-              className={cn(
-                nodeClass(node.id),
-                "gap-2 rounded-lg border border-dashed border-foreground/30 bg-card/60 px-2.5 hover:border-foreground/55",
-              )}
-            >
-              <CloudIcon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-xs leading-4 font-semibold text-foreground">
-                  {node.label}
-                </span>
-                <span className="block truncate text-2xs leading-4 text-muted-foreground">
-                  {status}
-                </span>
-              </span>
             </button>
           );
         }

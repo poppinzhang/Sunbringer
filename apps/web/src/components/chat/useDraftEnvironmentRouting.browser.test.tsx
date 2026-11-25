@@ -96,7 +96,6 @@ function setup() {
           environmentId: id,
           label: id,
           displayUrl: null,
-          relayManaged: false,
           entry: {
             target: new PrimaryConnectionTarget({
               environmentId: id,

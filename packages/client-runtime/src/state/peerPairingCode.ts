@@ -20,13 +20,12 @@ import * as RemoteEnvironmentAuthorization from "../authorization/service.ts";
 import type { PreparedConnection } from "../connection/model.ts";
 import type { EnvironmentRegistry } from "../connection/registry.ts";
 import * as EnvironmentSupervisor from "../connection/supervisor.ts";
-import * as ManagedRelay from "../relay/managedRelay.ts";
+import * as Dpop from "../dpop/signer.ts";
 import { executeAuthenticatedEnvironmentHttpRequest } from "./environmentHttpAuth.ts";
 import { createEnvironmentCommand } from "./runtime.ts";
 
 const MINT_TIMEOUT_MS = 8_000;
-const PEER_PAIRING_CODE_LABEL = "T3 Code link";
-const MCP_APPROVAL_CODE_LABEL = "App sign-in";
+const PEER_PAIRING_CODE_LABEL = "Sunbringer link";
 
 /** Minting failed; the user can still paste a code from the other environment. */
 export class PeerPairingCodeError extends Schema.TaggedError<PeerPairingCodeError>()(
@@ -47,7 +46,7 @@ const mintPairingCredential = Effect.fn("clientRuntime.state.mintPairingCredenti
   prepared: PreparedConnection,
   payload: AuthCreatePairingCredentialInput,
 ): Effect.fn.Return<AuthPairingCredentialResult, PeerPairingCodeError, HttpClient.HttpClient> {
-  const signer = yield* Effect.serviceOption(ManagedRelay.ManagedRelayDpopSigner);
+  const signer = yield* Effect.serviceOption(Dpop.DpopSigner);
   const remoteAuthorization = yield* Effect.serviceOption(
     RemoteEnvironmentAuthorization.RemoteEnvironmentAuthorization,
   );
@@ -123,19 +122,5 @@ export function createPeerPairingCodeCommand<R, E>(
         ),
         Effect.map((minted) => minted.credential),
       ),
-  });
-}
-
-/**
- * Mints a hidden code that approves one app's sign-in at `access`, and only that. Servers
- * without `mcpApprovalCodes` ignore the level, so check the capability first.
- */
-export function createMcpApprovalCodeCommand<R, E>(
-  runtime: Atom.AtomRuntime<EnvironmentRegistry | HttpClient.HttpClient | R, E>,
-) {
-  return createEnvironmentCommand(runtime, {
-    label: "environment-data:mcp-approval-code:mint",
-    execute: (access: AuthMcpClientAccess) =>
-      mintOnEnvironment({ label: MCP_APPROVAL_CODE_LABEL, access }),
   });
 }

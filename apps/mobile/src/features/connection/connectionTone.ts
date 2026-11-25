@@ -6,16 +6,8 @@ import type { RemoteClientConnectionState } from "../../lib/connection";
 
 export function connectionTone(
   state: RemoteClientConnectionState,
-  awaitingApproval?: boolean,
   resolve: MessageResolver = m,
 ): StatusTone {
-  if (state === "reconnecting" && awaitingApproval) {
-    return {
-      label: resolve(msg("Waiting for approval")),
-      pillClassName: "bg-update",
-      textClassName: "text-update-foreground",
-    };
-  }
   switch (state) {
     case "connected":
       return {

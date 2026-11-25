@@ -24,6 +24,9 @@ describe("resolveT3McpToolPresentation", () => {
         "mcp_t3-code_",
         "T3 Code ",
         "t3-code · ",
+        "Sunbringer ",
+        "sunbringer · ",
+        "mcp__sunbringer__",
       ]) {
         expect(resolveT3McpToolPresentation(`${prefix}${tool} completed`), tool).toEqual(
           presentation,
@@ -46,9 +49,9 @@ describe("resolveT3McpToolDefinition", () => {
     expect(
       resolveT3McpToolDefinition("mcp__t3-code__preview_act", { action: "type" })?.labels,
     ).toEqual(resolveT3McpToolDefinition("preview_type")?.labels);
-    expect(resolveT3McpToolDefinition("t3_thread_transfer", { action: "fork" })?.displayName).toBe(
-      resolveT3McpToolDefinition("t3_thread_fork")?.displayName,
-    );
+    expect(
+      resolveT3McpToolDefinition("sunbringer_thread_transfer", { action: "fork" })?.displayName,
+    ).toBe(resolveT3McpToolDefinition("sunbringer_thread_fork")?.displayName);
     expect(resolveT3McpToolDefinition("preview_act", { action: "unknown" })?.labels[2]).toBe(
       "Used",
     );
@@ -57,14 +60,16 @@ describe("resolveT3McpToolDefinition", () => {
 
 describe("resolveT3McpSummaryAction", () => {
   it("summarizes an action tool by the action each call ran", () => {
-    expect(resolveT3McpSummaryAction("mcp__t3-code__t3_queue", { action: "list" })).toBe(
+    expect(resolveT3McpSummaryAction("mcp__t3-code__sunbringer_queue", { action: "list" })).toBe(
       "queue-list",
     );
-    expect(resolveT3McpSummaryAction("t3_queue", { action: "edit" })).toBe("queue-edit");
-    expect(resolveT3McpSummaryAction("t3_thread_transfer", { action: "status" })).toBe(
+    expect(resolveT3McpSummaryAction("sunbringer_queue", { action: "edit" })).toBe("queue-edit");
+    expect(resolveT3McpSummaryAction("sunbringer_thread_transfer", { action: "status" })).toBe(
       "thread-transfers",
     );
-    expect(resolveT3McpSummaryAction("t3_thread_configure", {})).toBe("thread-configuration");
+    expect(resolveT3McpSummaryAction("sunbringer_thread_configure", {})).toBe(
+      "thread-configuration",
+    );
     expect(resolveT3McpSummaryAction("schedule_task", { scheduledTaskId: "task-1" })).toBe(
       "schedule-update",
     );

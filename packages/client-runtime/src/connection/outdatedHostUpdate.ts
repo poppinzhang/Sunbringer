@@ -29,16 +29,9 @@ import {
   localizeServerSelfUpdateError,
   resolveServerUpdateProgressResult,
 } from "../state/server.ts";
-import * as RelayEnvironmentDiscovery from "../relay/discovery.ts";
 import * as ConnectionResolver from "./resolver.ts";
 import * as EnvironmentRegistry from "./registry.ts";
-import {
-  connectionRoutes,
-  hasRelayRoute,
-  routeEntry,
-  routeHttpBaseUrl,
-  usableRoutes,
-} from "./routes.ts";
+import { connectionRoutes, routeEntry, routeHttpBaseUrl, usableRoutes } from "./routes.ts";
 
 // A v1 host restarting into v2 runs migrations before its descriptor answers again.
 const OUTDATED_HOST_RESTART_TIMEOUT = Duration.minutes(4);
@@ -89,13 +82,7 @@ export const updateOutdatedHost = Effect.fn("clientRuntime.connection.updateOutd
     const webSocketConstructor = yield* Socket.WebSocketConstructor;
     const httpClient = yield* HttpClient.HttpClient;
     const { entry, prepared, descriptor } = yield* reachOutdatedHost(environmentId);
-    // Discovery still holds the old relay descriptor and would re-block the
-    // environment from it, so replace that before clearing the block.
     const switchBackOn = Effect.gen(function* () {
-      if (hasRelayRoute(entry)) {
-        const discovery = yield* RelayEnvironmentDiscovery.RelayEnvironmentDiscovery;
-        yield* discovery.refresh;
-      }
       yield* registry.setCompatibility(environmentId, null);
       yield* registry.setEnabled(environmentId, true);
     });
@@ -116,7 +103,7 @@ export const updateOutdatedHost = Effect.fn("clientRuntime.connection.updateOutd
       return yield* new OutdatedHostUpdateError({
         environmentId,
         ...translatableMessage(
-          msg("Update T3 Code on {host} manually; it cannot update itself.", {
+          msg("Update Sunbringer on {host} manually; it cannot update itself.", {
             host: descriptor.label,
           }),
         ),
@@ -241,7 +228,7 @@ export const updateOutdatedHost = Effect.fn("clientRuntime.connection.updateOutd
       return yield* new OutdatedHostUpdateError({
         environmentId,
         ...translatableMessage(
-          msg("{host} did not come back on a compatible T3 Code version.", {
+          msg("{host} did not come back on a compatible Sunbringer version.", {
             host: descriptor.label,
           }),
         ),

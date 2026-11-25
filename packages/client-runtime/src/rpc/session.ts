@@ -33,7 +33,7 @@ import * as RpcSerialization from "effect/rpc/RpcSerialization";
 import * as Socket from "effect/socket/Socket";
 
 import { makeWsRpcProtocolClient, PING_TIMEOUT, type WsRpcProtocolClient } from "./protocol.ts";
-import { NETWORK_BLOCKING_HINT, UNRESPONSIVE_HOST_HINT } from "../errors/network.ts";
+import { UNRESPONSIVE_HOST_HINT } from "../errors/network.ts";
 import type {
   ConnectionAttemptError,
   ConnectionTransientError,
@@ -140,7 +140,6 @@ const PING_TIMEOUT_SECONDS = Duration.toSeconds(PING_TIMEOUT);
 
 function mapSessionRpcError(
   error: InitialConfigError | ProbeError | ServerConfigSubscriptionError | ConnectionAttemptError,
-  via: "relay" | "direct",
   socketFailure: () => ConnectionTransientError,
 ): ConnectionAttemptError {
   switch (error._tag) {
@@ -152,7 +151,6 @@ function mapSessionRpcError(
         reason: "permission",
         detail: error.message,
         hop: "server",
-        via,
       });
     case "KeybindingsConfigParseError":
     case "ServerSettingsError":
@@ -160,7 +158,6 @@ function mapSessionRpcError(
         reason: "remote-unavailable",
         detail: error.message,
         hop: "server",
-        via,
       });
     case "RpcClientError":
       return isSocketErrorReason(error.reason)
@@ -168,14 +165,9 @@ function mapSessionRpcError(
         : new ConnectionTransientErrorClass({
             reason: "transport",
             detail: error.message,
-            ...socketFailureLocation(via),
+            hop: "server",
           });
   }
-}
-
-/** Over T3 Connect the relay already reached the host, so a socket that drops failed between this device and the tunnel. */
-function socketFailureLocation(via: "relay" | "direct") {
-  return { hop: via === "relay" ? "tunnel" : "server", via } as const;
 }
 
 /** @public */
@@ -198,7 +190,6 @@ export const make = Effect.fn("RpcSessionFactory.make")(function* (
   });
 
   const connect = Effect.fnUntraced(function* (connection: PreparedConnection) {
-    const via = connection.target._tag === "RelayConnectionTarget" ? "relay" : "direct";
     yield* Effect.annotateCurrentSpan({
       "connection.environment.id": connection.environmentId,
     });
@@ -217,7 +208,6 @@ export const make = Effect.fn("RpcSessionFactory.make")(function* (
               msg("{host} could not establish a WebSocket connection.", {
                 host: connection.label,
               }),
-              ...(via === "relay" ? [NETWORK_BLOCKING_HINT] : []),
             )
           : pingTimedOut
             ? translatableDetail(
@@ -228,10 +218,10 @@ export const make = Effect.fn("RpcSessionFactory.make")(function* (
                 UNRESPONSIVE_HOST_HINT,
               )
             : translatableDetail(msg("{host} disconnected.", { host: connection.label }))),
-        ...socketFailureLocation(via),
+        hop: "server",
       });
     const mapRpcError = (error: Parameters<typeof mapSessionRpcError>[0]) =>
-      mapSessionRpcError(error, via, socketFailure);
+      mapSessionRpcError(error, socketFailure);
     const hooks = RpcClient.ConnectionHooks.of({
       onConnect: Deferred.succeed(connected, undefined).pipe(Effect.asVoid),
       onDisconnect: Effect.suspend(() => Deferred.fail(disconnected, socketFailure())).pipe(
@@ -390,7 +380,6 @@ export const make = Effect.fn("RpcSessionFactory.make")(function* (
                           ),
                         ),
                         hop: "server",
-                        via,
                       })
                     : new ConnectionBlockedError({
                         reason: "unsupported",
@@ -401,7 +390,6 @@ export const make = Effect.fn("RpcSessionFactory.make")(function* (
                           msg("Update the client and server to compatible versions."),
                         ),
                         hop: "server",
-                        via,
                       }),
                 ),
               ),

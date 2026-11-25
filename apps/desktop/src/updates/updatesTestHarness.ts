@@ -194,9 +194,9 @@ export function makeHarness(options: UpdatesHarnessOptions = {}) {
       Layer.mergeAll(
         NodeServices.layer,
         DesktopConfig.layerTest({
-          T3CODE_HOME: `/tmp/t3-desktop-updates-test-${process.pid}`,
-          T3CODE_DESKTOP_MOCK_UPDATES: "true",
-          T3CODE_DESKTOP_MOCK_UPDATE_SERVER_PORT: "4141",
+          SUNBRINGER_HOME: `/tmp/t3-desktop-updates-test-${process.pid}`,
+          SUNBRINGER_DESKTOP_MOCK_UPDATES: "true",
+          SUNBRINGER_DESKTOP_MOCK_UPDATE_SERVER_PORT: "4141",
           ...options.env,
         }),
       ),
@@ -243,7 +243,6 @@ export function makeHarness(options: UpdatesHarnessOptions = {}) {
         } satisfies DesktopAppSettings.DesktopAppSettings["Service"])
       : DesktopAppSettings.layer;
 
-  const updateRestartMarkers = new Set<string>();
   const updateMarkerContents = new Map<string, string>();
   const installRecords = new Map<string, string>();
   const deletedFiles = new Set<string>();
@@ -272,10 +271,7 @@ export function makeHarness(options: UpdatesHarnessOptions = {}) {
     writeFileString: (path, data) =>
       Effect.sync(() => {
         if (isInstallRecord(path)) installRecords.set(path, data);
-        else {
-          if (path.endsWith("/desktop-update-restart")) updateRestartMarkers.add(path);
-          updateMarkerContents.set(path, data);
-        }
+        else updateMarkerContents.set(path, data);
       }),
     rename: (from, to) =>
       Effect.sync(() => {
@@ -285,7 +281,6 @@ export function makeHarness(options: UpdatesHarnessOptions = {}) {
       }),
     remove: (path) =>
       Effect.sync(() => {
-        updateRestartMarkers.delete(path);
         updateMarkerContents.delete(path);
         installRecords.delete(path);
         if (isInstallRecord(path)) previousInstallRecord = undefined;
@@ -303,9 +298,9 @@ export function makeHarness(options: UpdatesHarnessOptions = {}) {
     Layer.provideMerge(layerSettings),
     Layer.provideMerge(
       DesktopConfig.layerTest({
-        T3CODE_HOME: `/tmp/t3-desktop-updates-test-${process.pid}`,
-        T3CODE_DESKTOP_MOCK_UPDATES: "true",
-        T3CODE_DESKTOP_MOCK_UPDATE_SERVER_PORT: "4141",
+        SUNBRINGER_HOME: `/tmp/t3-desktop-updates-test-${process.pid}`,
+        SUNBRINGER_DESKTOP_MOCK_UPDATES: "true",
+        SUNBRINGER_DESKTOP_MOCK_UPDATE_SERVER_PORT: "4141",
         ...options.env,
       }),
     ),
@@ -318,7 +313,6 @@ export function makeHarness(options: UpdatesHarnessOptions = {}) {
     checkCount: () => checkCount,
     quitAndInstalls: () => quitAndInstallCount,
     installSteps,
-    updateRestartMarkers,
     updateInProgressMarker: () =>
       [...updateMarkerContents].find(([path]) => path.endsWith("/desktop-update-in-progress"))?.[1],
     installRecords,

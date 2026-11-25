@@ -138,7 +138,7 @@ describe("readManagedPolicy", () => {
       );
       // Keys beside the wrapper, or a second entry, are refused rather than dropped or merged.
       for (const ambiguous of [
-        { Forced: [{ mcx_preference_settings: settings }], limits: { telemetry: false } },
+        { Forced: [{ mcx_preference_settings: settings }], limits: { webhookTasks: false } },
         { Forced: [{ mcx_preference_settings: settings }, { mcx_preference_settings: settings }] },
       ]) {
         assert.include(
@@ -187,7 +187,7 @@ describe("readManagedPolicy", () => {
         }
         assert.include(
           yield* win32({}, new WindowsRegistryError({})),
-          "cannot load its registry reader; reinstall T3 Code",
+          "cannot load its registry reader; reinstall Sunbringer",
         );
         assert.include(
           yield* win32({}, policyKey([{ name: "Policy", type: "other" }])),
@@ -231,7 +231,7 @@ describe("readManagedPolicy", () => {
               text("SupportUrl", ""),
               // Registry names ignore case.
               text("maxRuntimeMode", "auto-accept-edits"),
-              dword("Telemetry", 0),
+              dword("WebhookTasks", 0),
               text("Settings", '{"enableAgentBrowserAccess": {"value": false, "locked": true}}'),
               text("UpdatesMode", "off"),
               dword("AllowNightly", 1),
@@ -252,7 +252,7 @@ describe("readManagedPolicy", () => {
           settings: { enableAgentBrowserAccess: { value: false, locked: true } },
           limits: {
             maxRuntimeMode: "auto-accept-edits",
-            telemetry: false,
+            webhookTasks: false,
             updates: { mode: "off", allowNightly: true },
             clients: ["desktop", "local-browser", "remote"],
             providers: { allowedDrivers: ["codex", "claudeAgent", "UnknownDriver"] },
@@ -274,12 +274,12 @@ describe("readManagedPolicy", () => {
               dword("AllowedDrivers", 0),
               dword("Updates", 0),
               dword("AllowNightly", 0),
-              dword("Telemetry", 0),
+              dword("WebhookTasks", 0),
             ],
             disabledGroups,
           ),
         ),
-        { schemaVersion: 1, organization: "Société 日本 ✓", limits: { telemetry: false } },
+        { schemaVersion: 1, organization: "Société 日本 ✓", limits: { webhookTasks: false } },
       );
       // With nothing else configured, that is no policy rather than one missing Organization.
       assert.isUndefined(
@@ -293,15 +293,15 @@ describe("readManagedPolicy", () => {
 
       // Anything the template does not write fails closed rather than being ignored.
       for (const [registry, reason] of [
-        [policyKey([organization, dword("Telemetry", 2)]), "DWORD of 0 or 1"],
-        [policyKey([organization, text("MaxMode", "auto")]), "not a T3 Code policy value"],
-        [policyKey([organization], { Other: { x: 1 } }), "Other is not a T3 Code policy key"],
+        [policyKey([organization, dword("WebhookTasks", 2)]), "DWORD of 0 or 1"],
+        [policyKey([organization, text("MaxMode", "auto")]), "not a Sunbringer policy value"],
+        [policyKey([organization], { Other: { x: 1 } }), "Other is not a Sunbringer policy key"],
         [
           {
             ...policyKey([organization, dword("Clients", 1)], { Clients: { desktop: 1 } }),
             Clients: { values: [dword("desktop", 1)], subkeys: ["Nested"] },
           },
-          "Clients\\Nested is not a T3 Code policy key",
+          "Clients\\Nested is not a Sunbringer policy key",
         ],
         [policyKey([organization, text("Settings", "{")]), "not valid JSON"],
         [policyKey([organization, dword("Clients", 2)]), "DWORD of 0 or 1"],
@@ -318,7 +318,7 @@ describe("readManagedPolicy", () => {
         [policyKey([{ name: "Organization", type: "other" }]), "Organization must be a string"],
         [
           policyKey([text("MaxRuntimeMode", "auto-accept-edits")]),
-          "set the Organization policy whenever another T3 Code policy is set",
+          "set the Organization policy whenever another Sunbringer policy is set",
         ],
       ] as const) {
         assert.include(yield* document(registry), reason);

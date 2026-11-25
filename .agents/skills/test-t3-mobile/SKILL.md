@@ -1,6 +1,6 @@
 ---
 name: test-t3-mobile
-description: Test T3 Code's native iOS and Android app through its Device panel and returned AgentDevice command. Use for mobile verification, native-client builds, Metro launch, and mobile pairing against isolated development state.
+description: Test Sunbringer's native iOS and Android app through its Device panel and returned AgentDevice command. Use for mobile verification, native-client builds, Metro launch, and mobile pairing against isolated development state.
 ---
 
 # Test T3 Mobile
@@ -26,7 +26,7 @@ Test with meaningful project and thread data. Read the shared
 [SQLite fixture reference](../test-t3-app/references/sqlite-fixtures.md) only
 when inspecting or seeding SQLite. Stop the test server before fixture writes.
 
-## Launch T3 Code Dev
+## Launch Sunbringer Dev
 
 From the checkout being tested on the selected device host, run:
 
@@ -35,10 +35,9 @@ vp run mobile:install <ios|android> <device-id>
 ```
 
 This installs the dev client for the checkout's native fingerprint: from the
-device, the local cache, or the shared cache in seconds, building once only
-when no machine has that fingerprint yet: in the `Mobile Dev Client` workflow
-on Blacksmith when HEAD is pushed and `gh` may dispatch it (the command waits),
-otherwise here (5-15 minutes, logged to the file it names). The device id may be omitted when exactly one device is booted. It
+device or the local cache in seconds, building here only when this machine has
+not built that fingerprint yet (5-15 minutes, logged to the file it names). The
+device id may be omitted when exactly one device is booted. It
 prints one JSON line; on failure it names the next command. Mobile verification
 includes that step unless the user prohibits it.
 
@@ -73,7 +72,7 @@ arguments stored in `agent_device_command` and the Bash array
   "$agent_device_command" "${agent_device_target_args[@]}"
 ```
 
-It issues a fresh credential and opens T3 Code Dev's existing pairing route
+It issues a fresh credential and opens Sunbringer Dev's existing pairing route
 through AgentDevice. For a backend on the device host, use
 `http://127.0.0.1:<server-port>` on iOS or `http://10.0.2.2:<server-port>`
 on Android. For a remote backend, use its reachable origin.

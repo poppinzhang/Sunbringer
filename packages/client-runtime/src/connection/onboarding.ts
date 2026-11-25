@@ -22,7 +22,7 @@ import {
 } from "../environment/endpoint.ts";
 import { fetchRemoteEnvironmentDescriptor } from "../environment/descriptor.ts";
 import * as ClientCapabilities from "../platform/capabilities.ts";
-import * as ManagedRelay from "../relay/managedRelay.ts";
+import * as Dpop from "../dpop/signer.ts";
 import {
   BearerConnectionCredential,
   BearerConnectionProfile,
@@ -164,7 +164,7 @@ export const preparePairingRegistration = Effect.fn(
   }
   // A key-bound session renews itself, but only on a host that can renew it. The proof is made
   // before the one-time code is sent, so a device that cannot sign keeps the code for bearer.
-  const signer = yield* Effect.serviceOption(ManagedRelay.ManagedRelayDpopSigner);
+  const signer = yield* Effect.serviceOption(Dpop.DpopSigner);
   const dpopProof =
     descriptor.capabilities.accessTokenRenewal === true && Option.isSome(signer)
       ? yield* signer.value

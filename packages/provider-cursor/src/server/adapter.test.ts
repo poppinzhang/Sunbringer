@@ -1117,8 +1117,8 @@ describe("CursorAdapterV2", () => {
           lastProviderTurn = providerTurn.providerTurn;
         const sent = sentMessages.at(-1)!;
         return {
-          orchestration: sent.includes("## T3 Code orchestration"),
-          devices: sent.includes("## T3 Code devices"),
+          orchestration: sent.includes("## Sunbringer orchestration"),
+          devices: sent.includes("## Sunbringer devices"),
           runtime: sent.includes("<runtime_info>"),
         };
       });
@@ -3303,7 +3303,7 @@ describe("CursorAdapterV2", () => {
             "argument-only": { "command": "node", "args": ["server.mjs", "--workspace", "\${workspaceFolder}"] },
             "env-only": { "command": "node", "args": ["server.mjs"], "env": { "PROJECT_ROOT": "\${workspaceFolder}" } },
             "cwd-only": { "command": "node", "args": ["server.mjs"], "cwd": "\${workspaceFolder}" },
-            "unset-env": { "command": "node", "env": { "CONFIG": "\${env:T3_MCP_UNSET}" } },
+            "unset-env": { "command": "node", "env": { "CONFIG": "\${env:SUNBRINGER_MCP_UNSET}" } },
             "wrapped": { "command": "proto", "args": ["run", "node", "--", "\${workspaceFolder}/server.mjs"] },
             "label": { "command": "node", "args": ["server.mjs", "--label", "\${workspaceFolder}/client"] },
             "env-file": { "command": "node", "args": ["\${workspaceFolder}/server.mjs"], "envFile": ".env.mcp" },

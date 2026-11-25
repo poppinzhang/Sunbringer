@@ -20,6 +20,7 @@ jobs:
   preview:
     name: EAS Preview
     if: >-
+      vars.MOBILE_RELEASE == 'true' &&
       github.event.pull_request.head.repo.full_name != github.repository &&
       github.event.label.name == '🚀 Mobile Continuous Deployment'
     runs-on: blacksmith-8vcpu-ubuntu-2404
@@ -156,9 +157,9 @@ jobs:
           import { appendFileSync, readFileSync } from "node:fs";
           import { parseEnv } from "node:util";
           const env = parseEnv(readFileSync(".env.local", "utf8"));
-          const googleServicesFile = env.T3CODE_ANDROID_GOOGLE_SERVICES_FILE;
+          const googleServicesFile = env.SUNBRINGER_ANDROID_GOOGLE_SERVICES_FILE;
           if (googleServicesFile) {
-            appendFileSync(process.env.GITHUB_ENV, `T3CODE_ANDROID_GOOGLE_SERVICES_FILE=${googleServicesFile}\n`);
+            appendFileSync(process.env.GITHUB_ENV, `SUNBRINGER_ANDROID_GOOGLE_SERVICES_FILE=${googleServicesFile}\n`);
           }
           NODE
 

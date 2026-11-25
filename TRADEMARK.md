@@ -7,7 +7,7 @@ The [MIT License](./LICENSE) in this repository applies **only to the source cod
 T3 Tools, Inc. owns the following marks and brand assets, whether registered or unregistered:
 
 - The names **T3 Code**, **T3 Connect**, and **T3 Tools**
-- The **T3** wordmark, logos, application icons (including the brand assets in [`assets/`](./assets/) and `T3Wordmark`), and visual trade dress
+- The **T3** wordmark, logos, application icons, and visual trade dress
 - Official domains (`t3.codes`, `app.t3.codes`) and official package or app store listings
 
 ## Forks and derivative projects

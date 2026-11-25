@@ -16,12 +16,9 @@ import type { MessageResolver } from "../../i18n/messages";
 function noticeTitle(
   phase: EnvironmentConnectionPhase,
   environmentLabel: string,
-  awaitingApproval: boolean,
   resolve: MessageResolver,
 ): string {
   const environment = environmentLabel;
-  if (awaitingApproval)
-    return resolve(msg("Waiting for {environment} to approve this device", { environment }));
   switch (phase) {
     case "offline":
       return resolve(msg("You are offline"));
@@ -68,10 +65,8 @@ function noticeDetail(
   phase: EnvironmentConnectionPhase,
   resource: ConnectionNoticeResource,
   error: string | null,
-  awaitingApproval: boolean,
   resolve: MessageResolver,
 ): string {
-  if (error && awaitingApproval) return error;
   if (error) {
     return phase === "reconnecting"
       ? resolve(msg("The app will keep retrying automatically. {error}", { error }))
@@ -120,19 +115,13 @@ export function EnvironmentConnectionNotice(props: {
         )}
 
         <Text className="text-center text-lg font-t3-bold text-foreground">
-          {noticeTitle(
-            props.connection.phase,
-            props.environmentLabel,
-            props.connection.awaitingApproval === true,
-            m,
-          )}
+          {noticeTitle(props.connection.phase, props.environmentLabel, m)}
         </Text>
         <Text className="text-center text-sm leading-normal text-foreground-muted">
           {noticeDetail(
             props.connection.phase,
             props.resource,
             connectionErrorText(props.connection, m),
-            props.connection.awaitingApproval === true,
             m,
           )}
           {props.connection.traceId ? (

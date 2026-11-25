@@ -1,6 +1,7 @@
 import { EnvironmentId } from "@t3tools/contracts";
 import * as Effect from "effect/Effect";
 import * as Schema from "effect/Schema";
+import * as SchemaTransformation from "effect/SchemaTransformation";
 
 import {
   type ConnectionRegistration,
@@ -8,7 +9,6 @@ import {
   ConnectionProfile,
 } from "../connection/catalog.ts";
 import { type ConnectionTarget, PersistedConnectionTarget } from "../connection/model.ts";
-import * as TokenStore from "../authorization/tokenStore.ts";
 import { StoredPullRequestRoutingPermission } from "../connection/pullRequestRoutingPermissions.ts";
 
 export const StoredConnectionCredential = Schema.Struct({
@@ -17,19 +17,62 @@ export const StoredConnectionCredential = Schema.Struct({
 });
 export type StoredConnectionCredential = typeof StoredConnectionCredential.Type;
 
-export const ConnectionCatalogDocument = Schema.Struct({
+const catalogFields = {
   schemaVersion: Schema.Literal(1),
-  targets: Schema.Array(PersistedConnectionTarget),
   profiles: Schema.Array(ConnectionProfile),
   credentials: Schema.Array(StoredConnectionCredential),
-  remoteDpopTokens: Schema.Array(TokenStore.RemoteDpopAccessToken),
   // Pull request routing grants. The field name predates the rename and stays, so older and
   // newer clients sharing this document keep reading and revoking the same grants.
   githubRoutingPermissions: Schema.optionalKey(Schema.Array(StoredPullRequestRoutingPermission)),
   disabledEnvironmentIds: Schema.Array(EnvironmentId).pipe(
     Schema.withDecodingDefaultKey(Effect.succeed([])),
   ),
+};
+
+const CurrentConnectionCatalog = Schema.Struct({
+  ...catalogFields,
+  targets: Schema.Array(PersistedConnectionTarget),
 });
+type CurrentConnectionCatalog = typeof CurrentConnectionCatalog.Type;
+
+// A document saved while T3 Connect existed can hold its routes. Naming the old route here,
+// instead of accepting any unknown one, keeps a newer build's document from losing routes.
+const StoredConnectionCatalog = Schema.Struct({
+  ...catalogFields,
+  targets: Schema.Array(
+    Schema.Union([PersistedConnectionTarget, Schema.TaggedStruct("RelayConnectionTarget", {})]),
+  ),
+});
+
+function withoutConnectRoutes(
+  document: typeof StoredConnectionCatalog.Type,
+): CurrentConnectionCatalog {
+  // Routes learned over T3 Connect borrowed its credential, so they go with it.
+  const borrowed = new Set(
+    document.profiles.flatMap((profile) =>
+      profile._tag === "BearerConnectionProfile" && profile.authorization === "t3-connect"
+        ? [profile.connectionId]
+        : [],
+    ),
+  );
+  return {
+    ...document,
+    targets: document.targets.flatMap((target) =>
+      target._tag === "RelayConnectionTarget" || borrowed.has(target.connectionId) ? [] : [target],
+    ),
+    profiles: document.profiles.filter((profile) => !borrowed.has(profile.connectionId)),
+  };
+}
+
+export const ConnectionCatalogDocument = StoredConnectionCatalog.pipe(
+  Schema.decodeTo(
+    Schema.toType(CurrentConnectionCatalog),
+    SchemaTransformation.transform<CurrentConnectionCatalog, typeof StoredConnectionCatalog.Type>({
+      decode: withoutConnectRoutes,
+      encode: (document) => document,
+    }),
+  ),
+);
 export type ConnectionCatalogDocument = typeof ConnectionCatalogDocument.Type;
 
 export const EMPTY_CONNECTION_CATALOG_DOCUMENT: ConnectionCatalogDocument = Object.freeze({
@@ -37,7 +80,6 @@ export const EMPTY_CONNECTION_CATALOG_DOCUMENT: ConnectionCatalogDocument = Obje
   targets: [],
   profiles: [],
   credentials: [],
-  remoteDpopTokens: [],
   disabledEnvironmentIds: [],
 });
 
@@ -61,7 +103,6 @@ export function removeCatalogValue<A>(
 function connectionIdOf(target: ConnectionTarget): string | null {
   switch (target._tag) {
     case "PrimaryConnectionTarget":
-    case "RelayConnectionTarget":
       return null;
     case "BearerConnectionTarget":
     case "SshConnectionTarget":
@@ -78,15 +119,10 @@ function removeRouteMetadata(
   removed: ReadonlyArray<ConnectionTarget>,
 ): ConnectionCatalogDocument {
   const connectionIds = new Set(removed.flatMap((target) => connectionIdOf(target) ?? []));
-  const relayRemoved = removed.some((target) => target._tag === "RelayConnectionTarget");
-  const environmentIds = new Set(removed.map((target) => target.environmentId));
   return {
     ...document,
     profiles: document.profiles.filter((value) => !connectionIds.has(value.connectionId)),
     credentials: document.credentials.filter((value) => !connectionIds.has(value.connectionId)),
-    remoteDpopTokens: relayRemoved
-      ? document.remoteDpopTokens.filter((value) => !environmentIds.has(value.environmentId))
-      : document.remoteDpopTokens,
   };
 }
 
@@ -132,8 +168,6 @@ export function registerConnectionInCatalog(
   const next = setRoutesInCatalog(document, registration.target.environmentId, routes);
 
   switch (registration._tag) {
-    case "RelayConnectionRegistration":
-      return next;
     case "BearerConnectionRegistration":
     case "SshConnectionRegistration":
       return {
@@ -158,11 +192,6 @@ export function removeConnectionFromCatalog(
   const next = setRoutesInCatalog(document, environmentId, []);
   return {
     ...next,
-    remoteDpopTokens: removeCatalogValue(
-      next.remoteDpopTokens,
-      (value) => value.environmentId,
-      environmentId,
-    ),
     disabledEnvironmentIds: removeCatalogValue(
       next.disabledEnvironmentIds,
       (value) => value,
@@ -192,26 +221,5 @@ export function setConnectionEnabledInCatalog(
   return {
     ...document,
     disabledEnvironmentIds: registered && !enabled ? [...without, environmentId] : without,
-  };
-}
-
-export function putRemoteDpopTokenInCatalog(
-  document: ConnectionCatalogDocument,
-  token: TokenStore.RemoteDpopAccessToken,
-): ConnectionCatalogDocument {
-  const registered = document.targets.some(
-    (target) =>
-      target._tag === "RelayConnectionTarget" && target.environmentId === token.environmentId,
-  );
-  if (!registered) {
-    return document;
-  }
-  return {
-    ...document,
-    remoteDpopTokens: replaceCatalogValue(
-      document.remoteDpopTokens,
-      (value) => value.environmentId,
-      token,
-    ),
   };
 }

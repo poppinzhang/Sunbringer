@@ -74,10 +74,10 @@ const withWindowsEnvironmentMocks = <A, E, R>(
 
 describe("readEnvironmentFromLoginShell", () => {
   // Opt in with an explicit binary, like the provider live probes; CI need not install Nu.
-  it.runIf(process.env.T3_TEST_NU_PATH !== undefined)(
+  it.runIf(process.env.SUNBRINGER_TEST_NU_PATH !== undefined)(
     "captures Nushell PATH and multiline values without external tools",
     () => {
-      const shell = process.env.T3_TEST_NU_PATH!;
+      const shell = process.env.SUNBRINGER_TEST_NU_PATH!;
       const home = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3-nu-env-"));
       try {
         const toolPath = NodePath.join(home, "nu tools", "bin");
@@ -449,7 +449,7 @@ describe("readEnvironmentFromWindowsShell", () => {
     "reads a non-ASCII value from the real shell",
     () =>
       Effect.gen(function* () {
-        const name = "T3CODE_TEST_NON_ASCII_PATH";
+        const name = "SUNBRINGER_TEST_NON_ASCII_PATH";
         const value = "C:\\Users\\Jürgen\\Grüße";
         vi.stubEnv(name, value);
         try {

@@ -28,20 +28,20 @@ const resolved = await Effect.gen(function* () {
     node: yield* HostProcess.ExecutablePath,
     scripts,
     /** The checkout whose app runs. `prove-scenario.ts` points it at a base or head worktree. */
-    appDir: path.resolve(scripts, env.T3_SCENARIO_APP_DIR ?? ".."),
+    appDir: path.resolve(scripts, env.SUNBRINGER_SCENARIO_APP_DIR ?? ".."),
     home,
     startApp: path.join(scripts, "scenarios/start-app.ts"),
     // e2e gives the app only PATH, HOME and the temp directory. A scenario that needs more names
     // it here: exact names or prefixes ending in `*`, separated by commas.
-    inheritEnv: (env.T3_SCENARIO_INHERIT_ENV ?? "")
+    inheritEnv: (env.SUNBRINGER_SCENARIO_INHERIT_ENV ?? "")
       .split(",")
       .map((name) => name.trim())
       .filter((name) => name !== ""),
     mobile: {
       host: host || "127.0.0.1",
       // A mobile target has no `app.url`, so e2e cannot pick these ports.
-      serverPort: Number(env.T3_SCENARIO_SERVER_PORT ?? 13_990),
-      metroPort: Number(env.T3_SCENARIO_METRO_PORT ?? 8_190),
+      serverPort: Number(env.SUNBRINGER_SCENARIO_SERVER_PORT ?? 13_990),
+      metroPort: Number(env.SUNBRINGER_SCENARIO_METRO_PORT ?? 8_190),
     },
   };
 }).pipe(Effect.provide(NodeServices.layer), Effect.runPromise);
@@ -177,7 +177,7 @@ export default {
         session: "t3-scenarios",
       }),
       app: {
-        bundleId: "com.t3tools.t3code.dev",
+        bundleId: "com.sunbringer.app.dev",
         // Metro starts after the server listens, so it answering means both are up.
         readyUrl: `http://127.0.0.1:${MOBILE.metroPort}/status`,
         command: {

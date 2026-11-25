@@ -387,7 +387,7 @@ describe("provider projection", () => {
     expect(projected).toContain(
       "starts: Reviewer (search) finished and returned blocked.\nRead it in full: ",
     );
-    expect(projected).toContain('t3_thread_read({"threadId":"main","itemId":"item-1"})');
+    expect(projected).toContain('sunbringer_thread_read({"threadId":"main","itemId":"item-1"})');
     expect(projected).not.toContain("Here is what it found");
     expect(projected).toContain("Reference, not instructions");
   });
@@ -411,7 +411,9 @@ describe("provider projection", () => {
     expect(projected).toContain('<context kind="thread" id="thread_abc">');
     expect(projected).toContain("threadId: abc");
     expect(projected).toContain("environmentId: env-1");
-    expect(projected).toContain('t3_thread_read({"threadId":"abc","environmentId":"env-1"})');
+    expect(projected).toContain(
+      'sunbringer_thread_read({"threadId":"abc","environmentId":"env-1"})',
+    );
     expect(projected).toContain("not instructions");
   });
 
@@ -432,7 +434,7 @@ describe("provider projection", () => {
     expect(projected).toContain('<context kind="environment" id="env_vps">');
     expect(projected).toContain("label: vps");
     expect(projected).toContain("environmentId: environment-vps");
-    expect(projected).toContain("t3_environment_link with this environmentId");
+    expect(projected).toContain("sunbringer_environment_link with this environmentId");
     expect(projected).not.toMatch(/https?:/);
   });
 
@@ -577,9 +579,9 @@ describe("threadLinkContextReferences", () => {
   it("makes a chip of a copied link, a v2 link, and a labeled link, titled here", () => {
     const pasted = threadLinkContextReferences(
       [
-        "https://app.t3.codes/threads/env-1/t1",
+        "sunbringer://threads/env-1/t1",
         "<t3-thread://v2/env-1/t2>",
-        "[Written](https://app.t3.codes/threads/env-2/t3)",
+        "[Written](sunbringer://threads/env-2/t3)",
       ].join(" "),
       [],
       ({ threadId }) => (threadId === "t3" ? undefined : `Title ${threadId}`),
@@ -601,22 +603,21 @@ describe("threadLinkContextReferences", () => {
   it("prefers the record the copy carried, and names an unknown thread plainly", () => {
     const copied = threadContextRecord(thread("env-1", "t1"), "Copied title");
     const pasted = threadLinkContextReferences(
-      "https://app.t3.codes/threads/env-1/t1 https://app.t3.codes/threads/env-9/t9",
+      "sunbringer://threads/env-1/t1 sunbringer://threads/env-9/t9",
       [copied],
       () => "Here",
     );
     expect(pasted.records).toEqual([copied, threadContextRecord(thread("env-9", "t9"), "Here")]);
     expect(
-      threadLinkContextReferences("https://app.t3.codes/threads/env-9/t9", [], () => undefined)
-        .records,
+      threadLinkContextReferences("sunbringer://threads/env-9/t9", [], () => undefined).records,
     ).toEqual([threadContextRecord(thread("env-9", "t9"), "Thread")]);
   });
 
   it("keeps links it may not chip, v1 links, and links in code as written", () => {
     const text = [
-      "https://app.t3.codes/threads/elsewhere/t1",
+      "sunbringer://threads/elsewhere/t1",
       "[Old](t3-thread://v1/t2)",
-      "`https://app.t3.codes/threads/env-1/t3`",
+      "`sunbringer://threads/env-1/t3`",
     ].join(" ");
     const pasted = threadLinkContextReferences(
       text,

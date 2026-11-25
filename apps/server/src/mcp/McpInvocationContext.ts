@@ -1,5 +1,4 @@
 import {
-  type AgentFeedbackMode,
   type AuthMcpClientAccess,
   type EnvironmentId,
   McpCapabilityUnavailableError,
@@ -155,14 +154,12 @@ export interface McpInvocationScope {
   readonly client: McpClientCaller | undefined;
   /** False while the Linked environments beta is off here; `/mcp` reads it per request. */
   readonly linkedEnvironments?: boolean;
-  /** The Agent feedback mode here; `/mcp` reads it per request. Unset is off. */
-  readonly agentFeedback?: AgentFeedbackMode;
   /** The broadest runtime mode an administrator lets a thread run in here. Unset is full access. */
   readonly runtimeModeCeiling?: RuntimeMode | undefined;
   /** True while Labs → Workflows is on here; `/mcp` reads it per request. Unset is off. */
   readonly workflows?: boolean;
   /**
-   * The origin this `/mcp` request reached, e.g. a T3 Connect tunnel. Hosted clients cannot
+   * The origin this `/mcp` request reached, e.g. a tunnel. Hosted clients cannot
    * see the URL they were configured with, so links they must fetch carry it. Unset in-process.
    */
   readonly origin?: string | undefined;
@@ -171,8 +168,8 @@ export interface McpInvocationScope {
 }
 
 /**
- * T3 Code renders `t3-thread://` links as thread chips. Other MCP clients cannot open them, so
- * they get the hosted link Copy thread copies, which opens the thread in either app or a browser.
+ * Sunbringer renders `t3-thread://` links as thread chips. Outside MCP clients get a
+ * `sunbringer://threads/...` app link (or `hostedAppUrl` when explicitly provided).
  * A known `title` labels the chip for clients that cannot load this environment's threads.
  */
 export const threadLinkFor = (
@@ -180,11 +177,13 @@ export const threadLinkFor = (
   threadId: ThreadId,
   title?: string,
 ): string => {
-  const hostedAppUrl = scope.client?.hostedAppUrl;
   const ref = { environmentId: scope.environmentId, threadId };
-  return hostedAppUrl === undefined
-    ? formatThreadLink(ref, title)
-    : hostedThreadLink(ref, hostedAppUrl);
+  if (scope.client?.hostedAppUrl !== undefined) {
+    return hostedThreadLink(ref, scope.client.hostedAppUrl);
+  }
+  return scope.client && !scope.client.linked
+    ? hostedThreadLink(ref)
+    : formatThreadLink(ref, title);
 };
 
 export class McpInvocationContext extends Context.Service<
@@ -234,13 +233,6 @@ export const hiddenWhileLinksOff = (): boolean => {
   const fiber = Fiber.getCurrent();
   const scope = fiber && Context.getOrUndefined(fiber.context, McpInvocationContext);
   return scope?.linkedEnvironments !== false;
-};
-
-/** `McpSchema.EnabledWhen` for agent feedback tools, for every client including `t3 feedback`. */
-export const hiddenWhileFeedbackOff = (): boolean => {
-  const fiber = Fiber.getCurrent();
-  const scope = fiber && Context.getOrUndefined(fiber.context, McpInvocationContext);
-  return scope?.agentFeedback !== undefined && scope.agentFeedback !== "off";
 };
 
 /** `McpSchema.EnabledWhen` for workflow event types: outside clients only, while Workflows is on. */
@@ -306,7 +298,7 @@ export const requireThreadMcpCapability = <const C extends "preview" | "device">
 const threadCallerRequired = (operation: string) =>
   new OrchestratorMcpFailure({
     code: "thread_credential_required",
-    message: `${operation} acts as the calling T3 thread, so it needs an agent running inside T3 Code. This MCP client signed in from outside a thread.`,
+    message: `${operation} acts as the calling Sunbringer thread, so it needs an agent running inside Sunbringer. This MCP client signed in from outside a thread.`,
   });
 
 export type McpThreadInvocationScope = McpInvocationScope & { readonly thread: McpThreadCaller };

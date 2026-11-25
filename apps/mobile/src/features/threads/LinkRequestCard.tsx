@@ -501,13 +501,7 @@ function MachineRow(props: {
 }) {
   const gt = useGT();
   const { machine } = props;
-  const status = machine.linked
-    ? gt("Linked")
-    : machine.connected
-      ? null
-      : machine.connectOnly
-        ? "T3 Connect"
-        : gt("Not connected");
+  const status = machine.linked ? gt("Linked") : machine.connected ? null : gt("Not connected");
   return (
     <Pressable
       accessibilityRole="radio"

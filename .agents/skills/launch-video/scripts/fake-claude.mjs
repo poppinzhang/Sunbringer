@@ -294,7 +294,11 @@ async function playTurn(prompt) {
       const filled = fill(raw, local);
       // `submit` hands a workflow agent step its typed result through T3's own MCP.
       const step = filled.submit
-        ? { ...filled, tool: "t3_submit_output", input: { json: JSON.stringify(filled.submit) } }
+        ? {
+            ...filled,
+            tool: "sunbringer_submit_output",
+            input: { json: JSON.stringify(filled.submit) },
+          }
         : filled;
       if (step.wait) await sleep(step.wait);
       if (step.think) await streamText(step.think, "thinking");

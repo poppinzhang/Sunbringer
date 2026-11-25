@@ -36,7 +36,7 @@ import * as EnvironmentSupervisor from "../connection/supervisor.ts";
 import * as ConnectionWakeups from "../connection/wakeups.ts";
 import * as Persistence from "../platform/persistence.ts";
 import { runCachePersistence } from "./cachePersistence.ts";
-import * as ManagedRelay from "../relay/managedRelay.ts";
+import * as Dpop from "../dpop/signer.ts";
 import {
   isAuthorizationFailure,
   request,
@@ -255,7 +255,7 @@ export const makeEnvironmentThreadState = Effect.fn("EnvironmentThreadState.make
     ThreadHistoryController.ThreadHistoryController,
   );
   const httpClient = yield* Effect.serviceOption(HttpClient.HttpClient);
-  const dpopSigner = yield* Effect.serviceOption(ManagedRelay.ManagedRelayDpopSigner);
+  const dpopSigner = yield* Effect.serviceOption(Dpop.DpopSigner);
   const remoteAuthorization = yield* Effect.serviceOption(
     RemoteEnvironmentAuthorization.RemoteEnvironmentAuthorization,
   );

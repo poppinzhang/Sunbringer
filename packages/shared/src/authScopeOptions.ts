@@ -10,9 +10,6 @@ import {
   AuthOrchestrationReadScope,
   AuthPreviewOperateScope,
   AuthProvidersManageScope,
-  AuthRelayReadScope,
-  AuthRelayConfigureScope,
-  AuthRelayWriteScope,
   AuthSettingsWriteScope,
   AuthSourceControlWriteScope,
   AuthTerminalOperateScope,
@@ -95,23 +92,6 @@ export const AUTH_SCOPE_OPTIONS: ReadonlyArray<{
     scope: AuthAccessWriteScope,
     title: msg("Manage access"),
     description: msg("Issue and revoke credentials for other clients."),
-  },
-  {
-    scope: AuthRelayReadScope,
-    title: msg("View relay"),
-    description: msg("Inspect managed relay connectivity."),
-  },
-  {
-    scope: AuthRelayWriteScope,
-    title: msg("Manage relay"),
-    description: msg("Update relay preferences or unlink T3 Connect."),
-  },
-  {
-    scope: AuthRelayConfigureScope,
-    title: msg("Configure relay (admin)"),
-    description: msg(
-      "Set up or replace T3 Connect, including its trusted pairing credential issuer.",
-    ),
   },
 ];
 

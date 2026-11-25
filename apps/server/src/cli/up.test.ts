@@ -18,43 +18,23 @@ import { afterEach, vi } from "vite-plus/test";
 import packageJson from "../../package.json" with { type: "json" };
 import * as BootService from "../cloud/bootService.ts";
 import { upsertServiceEnv } from "./service.ts";
-import { connectEnabled, planRoutes, statusCommand, upCommand } from "./up.ts";
-
-const none = Option.none<boolean>();
+import { planLan, statusCommand, upCommand } from "./up.ts";
 
 it.each([
   {
-    label: "a new machine starts from T3 Connect and asks",
-    setup: { installed: false, connect: false, lan: false },
-    flags: { connect: none, lan: none },
-    expected: { routes: { connect: true, lan: false }, ask: ["connect", "lan"] },
+    label: "no flag starts from the current setting and asks",
+    lan: true,
+    flag: Option.none<boolean>(),
+    expected: { lan: true, ask: true },
   },
   {
-    label: "a build without T3 Connect never offers it",
-    setup: { installed: false, connect: null, lan: false },
-    flags: { connect: none, lan: none },
-    expected: { routes: { connect: false, lan: false }, ask: ["lan"] },
+    label: "a flag sets access and asks nothing",
+    lan: true,
+    flag: Option.some(false),
+    expected: { lan: false, ask: false },
   },
-  {
-    label: "a rerun starts from the current setup",
-    setup: { installed: true, connect: false, lan: true },
-    flags: { connect: none, lan: none },
-    expected: { routes: { connect: false, lan: true }, ask: ["connect", "lan"] },
-  },
-  {
-    label: "a route flag on a new machine turns on only that route",
-    setup: { installed: false, connect: false, lan: false },
-    flags: { connect: none, lan: Option.some(true) },
-    expected: { routes: { connect: false, lan: true }, ask: [] },
-  },
-  {
-    label: "a route flag asks nothing and keeps the other route",
-    setup: { installed: true, connect: true, lan: true },
-    flags: { connect: none, lan: Option.some(false) },
-    expected: { routes: { connect: true, lan: false }, ask: [] },
-  },
-])("$label", ({ setup, flags, expected }) => {
-  expect(planRoutes(setup, flags)).toEqual(expected);
+])("$label", ({ lan, flag, expected }) => {
+  expect(planLan({ lan }, flag)).toEqual(expected);
 });
 
 const SERVICE = {
@@ -64,59 +44,6 @@ const SERVICE = {
   unitPath: "/home/me/.config/systemd/user/t3code.service",
   logPath: "/home/me/.t3/userdata/logs/boot-service.log",
 } as const;
-
-it.each([
-  {
-    label: "a CLI managed link",
-    cliDesired: true,
-    cliMode: "managed",
-    managedTunnel: false,
-    revoked: false,
-    on: true,
-  },
-  {
-    label: "a link the app made",
-    cliDesired: false,
-    cliMode: "managed",
-    managedTunnel: true,
-    revoked: false,
-    on: true,
-  },
-  {
-    label: "a publish-only link",
-    cliDesired: true,
-    cliMode: "publish_only",
-    managedTunnel: false,
-    revoked: false,
-    on: false,
-  },
-  {
-    label: "a publish-only link with an old tunnel config",
-    cliDesired: true,
-    cliMode: "publish_only",
-    managedTunnel: true,
-    revoked: false,
-    on: false,
-  },
-  {
-    label: "a revoked link",
-    cliDesired: true,
-    cliMode: "managed",
-    managedTunnel: true,
-    revoked: true,
-    on: false,
-  },
-  {
-    label: "no link",
-    cliDesired: false,
-    cliMode: "managed",
-    managedTunnel: false,
-    revoked: false,
-    on: false,
-  },
-] as const)("T3 Connect is on for $label: $on", ({ label: _, on, ...link }) => {
-  expect(connectEnabled(link)).toBe(on);
-});
 
 // Prompts run only when both streams are terminals.
 const asTerminal = Effect.acquireRelease(
@@ -179,21 +106,21 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer, NetService.layer))
     {
       label: "nothing changed",
       installed: true,
-      env: "T3CODE_LAN=false\n",
+      env: "SUNBRINGER_LAN=false\n",
       args: ["--no-lan"],
       installs: 0,
       restarts: 0,
-      envAfter: "T3CODE_LAN=false\n",
+      envAfter: "SUNBRINGER_LAN=false\n",
     },
     {
       label: "the local network opens",
-      prints: ["Run `t3 pair --base-dir <baseDir>`."],
+      prints: ["Run `sunbringer pair --base-dir <baseDir>`."],
       installed: true,
-      env: "T3CODE_LAN=false\n",
+      env: "SUNBRINGER_LAN=false\n",
       args: ["--lan"],
       installs: 0,
       restarts: 1,
-      envAfter: "T3CODE_LAN=true\n",
+      envAfter: "SUNBRINGER_LAN=true\n",
     },
     {
       label: "a new service starts with its settings",
@@ -202,32 +129,32 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer, NetService.layer))
       args: ["--lan"],
       installs: 1,
       restarts: 0,
-      envAfter: "T3CODE_LAN=true\n",
+      envAfter: "SUNBRINGER_LAN=true\n",
     },
     {
       label: "a route turns off with no service to run",
-      prints: ["Run `t3 --base-dir <baseDir>` to use T3 Code here."],
+      prints: ["Run `sunbringer --base-dir <baseDir>` to use Sunbringer here."],
       installed: false,
-      env: "T3CODE_LAN=true\n",
+      env: "SUNBRINGER_LAN=true\n",
       args: ["--no-lan"],
       installs: 0,
       restarts: 0,
-      envAfter: "T3CODE_LAN=false\n",
+      envAfter: "SUNBRINGER_LAN=false\n",
     },
     {
       label: "a stopped newer service starts as it is",
       installed: true,
       status: { current: false, installedVersion: "999.0.0", problems: ["service-stopped"] },
-      env: "T3CODE_LAN=false\n",
+      env: "SUNBRINGER_LAN=false\n",
       args: ["--yes"],
       installs: 0,
       restarts: 1,
-      envAfter: "T3CODE_LAN=false\n",
+      envAfter: "SUNBRINGER_LAN=false\n",
     },
     {
       label: "a failed update keeps service.env matching the old service",
       // The old service still runs, so no foreground server is offered.
-      prints: ["Fix that, then run `t3 up --base-dir <baseDir>` again."],
+      prints: ["Fix that, then run `sunbringer up --base-dir <baseDir>` again."],
       installed: true,
       status: { current: false },
       installFails: true,
@@ -241,22 +168,22 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer, NetService.layer))
       label: "a failed restart puts service.env back and restarts on it",
       installed: true,
       restartFails: true,
-      env: "T3CODE_LAN=false\n",
+      env: "SUNBRINGER_LAN=false\n",
       args: ["--lan"],
       installs: 0,
       restarts: 2,
-      envAfter: "T3CODE_LAN=false\n",
+      envAfter: "SUNBRINGER_LAN=false\n",
     },
     {
       label: "declining an update changes nothing",
       installed: true,
       status: { current: false },
       answer: "n",
-      env: "T3CODE_LAN=false\n",
+      env: "SUNBRINGER_LAN=false\n",
       args: ["--lan"],
       installs: 0,
       restarts: 0,
-      envAfter: "T3CODE_LAN=false\n",
+      envAfter: "SUNBRINGER_LAN=false\n",
     },
     {
       label: "a service for another home is refused without a restart",
@@ -264,11 +191,11 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer, NetService.layer))
       status: { current: false, otherBaseDir: "/srv/t3 home" },
       fails: true,
       answer: "y",
-      env: "T3CODE_LAN=false\n",
+      env: "SUNBRINGER_LAN=false\n",
       args: ["--lan"],
       installs: 0,
       restarts: 0,
-      envAfter: "T3CODE_LAN=false\n",
+      envAfter: "SUNBRINGER_LAN=false\n",
     },
     {
       label: "another home's service supplies no local network default",
@@ -290,8 +217,8 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer, NetService.layer))
       installed: true,
       reportStatus: true,
       prints: [
-        "Turn it off: `t3 up --base-dir <baseDir> --no-lan`.",
-        "Change access: `t3 up --base-dir <baseDir>`.",
+        "Turn it off: `sunbringer up --base-dir <baseDir> --no-lan`.",
+        "Change access: `sunbringer up --base-dir <baseDir>`.",
       ],
       env: "",
       args: [],
@@ -303,13 +230,13 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer, NetService.layer))
       label: "a host override gets no --no-lan hint it would ignore",
       installed: true,
       reportStatus: true,
-      prints: ["overridden · T3CODE_HOST=0.0.0.0"],
+      prints: ["overridden · SUNBRINGER_HOST=0.0.0.0"],
       omits: "--no-lan",
-      env: "T3CODE_HOST=0.0.0.0\n",
+      env: "SUNBRINGER_HOST=0.0.0.0\n",
       args: [],
       installs: 0,
       restarts: 0,
-      envAfter: "T3CODE_HOST=0.0.0.0\n",
+      envAfter: "SUNBRINGER_HOST=0.0.0.0\n",
     },
     {
       label: "no service manager still records the choice",
@@ -319,7 +246,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer, NetService.layer))
       args: ["--lan"],
       installs: 0,
       restarts: 0,
-      envAfter: "T3CODE_LAN=true\n",
+      envAfter: "SUNBRINGER_LAN=true\n",
     },
     {
       label: "the old default is kept",
@@ -328,7 +255,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer, NetService.layer))
       args: ["--yes"],
       installs: 0,
       restarts: 0,
-      envAfter: "T3CODE_LAN=true\n",
+      envAfter: "SUNBRINGER_LAN=true\n",
     },
   ])("keeps service changes and access settings consistent: $label", (input) =>
     Effect.gen(function* () {
@@ -424,23 +351,29 @@ it.layer(Layer.mergeAll(NodeServices.layer, NodeCrypto.layer, NetService.layer))
 });
 
 it("rewrites only the named service.env keys and keeps the user's lines", () => {
-  const before = ["# my settings", "T3CODE_PORT=4000", "export T3CODE_LAN=0", "T3CODE_LAN=1", ""];
-  expect(upsertServiceEnv(before.join("\n"), { T3CODE_LAN: "true", T3CODE_HOST: undefined })).toBe(
-    ["# my settings", "T3CODE_PORT=4000", "T3CODE_LAN=true", ""].join("\n"),
-  );
-  expect(upsertServiceEnv("", { T3CODE_LAN: "false" })).toBe("T3CODE_LAN=false\n");
+  const before = [
+    "# my settings",
+    "SUNBRINGER_PORT=4000",
+    "export SUNBRINGER_LAN=0",
+    "SUNBRINGER_LAN=1",
+    "",
+  ];
   expect(
-    upsertServiceEnv('T3CODE_LAN="a\nb"\nCUSTOM="x\nT3CODE_LAN=y"\nT3CODE_LAN=true\n', {
-      T3CODE_LAN: "false",
-    }),
-  ).toBe('T3CODE_LAN=false\nCUSTOM="x\nT3CODE_LAN=y"\n');
+    upsertServiceEnv(before.join("\n"), { SUNBRINGER_LAN: "true", SUNBRINGER_HOST: undefined }),
+  ).toBe(["# my settings", "SUNBRINGER_PORT=4000", "SUNBRINGER_LAN=true", ""].join("\n"));
+  expect(upsertServiceEnv("", { SUNBRINGER_LAN: "false" })).toBe("SUNBRINGER_LAN=false\n");
   expect(
-    upsertServiceEnv('T3CODE_LAN=\u00a0"unused\nCUSTOM=keep\nEND="\nT3CODE_LAN=true\n', {
-      T3CODE_LAN: "false",
+    upsertServiceEnv('SUNBRINGER_LAN="a\nb"\nCUSTOM="x\nSUNBRINGER_LAN=y"\nSUNBRINGER_LAN=true\n', {
+      SUNBRINGER_LAN: "false",
     }),
-  ).toBe('T3CODE_LAN=false\nCUSTOM=keep\nEND="\n');
+  ).toBe('SUNBRINGER_LAN=false\nCUSTOM="x\nSUNBRINGER_LAN=y"\n');
+  expect(
+    upsertServiceEnv('SUNBRINGER_LAN=\u00a0"unused\nCUSTOM=keep\nEND="\nSUNBRINGER_LAN=true\n', {
+      SUNBRINGER_LAN: "false",
+    }),
+  ).toBe('SUNBRINGER_LAN=false\nCUSTOM=keep\nEND="\n');
   const long = `CUSTOM="${"\n".repeat(130_000)}"\n`;
-  expect(upsertServiceEnv(`${long}T3CODE_LAN=true\n`, { T3CODE_LAN: "false" })).toBe(
-    `${long}T3CODE_LAN=false\n`,
+  expect(upsertServiceEnv(`${long}SUNBRINGER_LAN=true\n`, { SUNBRINGER_LAN: "false" })).toBe(
+    `${long}SUNBRINGER_LAN=false\n`,
   );
 });

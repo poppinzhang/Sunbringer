@@ -266,11 +266,11 @@ it.layer(layerTest, { excludeTestServices: true })("WorkspaceFileSystemLive", (i
 
         const result = yield* workspaceFileSystem.readFile({
           cwd,
-          relativePath: "t3.json",
+          relativePath: "sunbringer.json",
           allowMissing: true,
         });
         expect(result).toEqual({
-          relativePath: "t3.json",
+          relativePath: "sunbringer.json",
           contents: "",
           byteLength: 0,
           truncated: false,
@@ -278,7 +278,7 @@ it.layer(layerTest, { excludeTestServices: true })("WorkspaceFileSystemLive", (i
         });
 
         const error = yield* workspaceFileSystem
-          .readFile({ cwd, relativePath: "t3.json" })
+          .readFile({ cwd, relativePath: "sunbringer.json" })
           .pipe(Effect.flip);
         expect(error).toMatchObject({ operation: "realpath-workspace-root" });
       }),
@@ -560,7 +560,7 @@ it.layer(layerTest, { excludeTestServices: true })("WorkspaceFileSystemLive", (i
           const missingChildError = yield* workspaceFileSystem
             .readFile(
               Object.assign(
-                { cwd, relativePath: "linked-dir/missing/t3.json" },
+                { cwd, relativePath: "linked-dir/missing/sunbringer.json" },
                 { allowMissing: true },
               ),
             )

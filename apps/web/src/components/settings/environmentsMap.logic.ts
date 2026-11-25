@@ -52,14 +52,6 @@ export interface FleetEnvironmentInput {
   readonly hasLinkAddress: boolean;
 }
 
-/** A machine on the user's T3 Connect account that this client has not saved. */
-export interface FleetConnectMachineInput {
-  readonly environmentId: EnvironmentId;
-  readonly label: string;
-  readonly machine: EnvironmentMachineKind | null;
-  readonly availability: "checking" | "online" | "offline" | "error";
-}
-
 /**
  * How a route is doing, from what the client knows: which one carries the connection, which the
  * host refused, and the environment's phase. It never probes a route to find out.
@@ -72,9 +64,7 @@ export type FleetRouteState =
   | "down"
   /** Not dialled: the environment is switched off, or needs an update first. */
   | "idle"
-  | "refused"
-  /** A T3 Connect machine this client could add; no route is saved yet. */
-  | "offered";
+  | "refused";
 
 /** Why an environment can or cannot be the source of a new link. */
 export type FleetLinking = "ready" | "disconnected" | "off" | "forbidden";
@@ -97,14 +87,6 @@ export type FleetNode =
       readonly mintable: boolean;
       readonly canWriteAccess: boolean;
       readonly hasLinkAddress: boolean;
-    }
-  | {
-      readonly id: string;
-      readonly kind: "connect";
-      readonly environmentId: EnvironmentId;
-      readonly label: string;
-      readonly machine: EnvironmentMachineKind | null;
-      readonly availability: FleetConnectMachineInput["availability"];
     }
   /** Seen only as another environment's link target; the client is not connected to it. */
   | {
@@ -175,13 +157,11 @@ function linking(environment: FleetEnvironmentInput): FleetLinking {
 
 /**
  * One node per machine however often it is named: an environment listed twice, a link repeated
- * in a list, a T3 Connect machine the client also saved, and a link to a machine the client
- * knows all land on the same node. Each saved route is its own edge from the client.
+ * in a list, and a link to a machine the client knows all land on the same node. Each saved route is its own edge from the client.
  */
 export function buildFleetGraph(input: {
   readonly clientLabel: string;
   readonly environments: ReadonlyArray<FleetEnvironmentInput>;
-  readonly connectMachines?: ReadonlyArray<FleetConnectMachineInput>;
   readonly now: DateTime.Utc;
 }): FleetGraph {
   const nodes = new Map<string, FleetNode>([
@@ -227,27 +207,6 @@ export function buildFleetGraph(input: {
         state: routeState(environment, route.id),
       });
     }
-  }
-  for (const machine of input.connectMachines ?? []) {
-    const id = fleetEnvironmentNodeId(machine.environmentId);
-    if (nodes.has(id)) continue;
-    nodes.set(id, {
-      id,
-      kind: "connect",
-      environmentId: machine.environmentId,
-      label: machine.label,
-      machine: machine.machine,
-      availability: machine.availability,
-    });
-    edges.set(`route:${id}:offer`, {
-      id: `route:${id}:offer`,
-      kind: "route",
-      from: FLEET_CLIENT_NODE_ID,
-      to: id,
-      routeId: "offer",
-      routeKind: "relay",
-      state: "offered",
-    });
   }
   for (const environment of environments) {
     if (environment.outgoing.state !== "loaded") continue;
@@ -395,7 +354,7 @@ export const FLEET_LANE_PITCH = 12;
 const labelOrder = new Intl.Collator("en", { numeric: true, sensitivity: "base" });
 
 /** Why an environment with no links is folded away: what the client knows of it, never a probe. */
-export type FleetFoldGroup = "offline" | "off" | "update" | "not-added";
+export type FleetFoldGroup = "offline" | "off" | "update";
 
 /**
  * Machines drawn as a single node, each still listed in the details. `targets` are machines
@@ -436,7 +395,6 @@ export const FLEET_STACK_SHOWN_MAX = 24;
 export const fleetMoreNodeId = (stackId: string) => `more:${stackId}`;
 
 function foldGroup(node: FleetNode): FleetFoldGroup | null {
-  if (node.kind === "connect") return "not-added";
   if (node.kind !== "environment") return null;
   if (node.phase === "unsupported") return "update";
   if (!node.enabled) return "off";
@@ -446,7 +404,7 @@ function foldGroup(node: FleetNode): FleetFoldGroup | null {
     : null;
 }
 
-const FOLD_ORDER: ReadonlyArray<FleetFoldGroup> = ["offline", "off", "update", "not-added"];
+const FOLD_ORDER: ReadonlyArray<FleetFoldGroup> = ["offline", "off", "update"];
 
 export function fleetStacks(graph: FleetGraph, expanded: ReadonlySet<string>): FleetStack[] {
   const byId = new Map(graph.nodes.map((node) => [node.id, node]));
@@ -512,9 +470,7 @@ export function fleetStacks(graph: FleetGraph, expanded: ReadonlySet<string>): F
       ),
     );
   }
-  const hosts = graph.nodes.filter(
-    (node) => node.kind === "environment" || node.kind === "connect",
-  );
+  const hosts = graph.nodes.filter((node) => node.kind === "environment");
   if (hosts.length <= FLEET_FOLD_ENVIRONMENTS_OVER) return stacks;
   const linked = new Set(links.flatMap((link) => [link.from, link.to]));
   const routesOf = new Map<string, string[]>();
@@ -811,7 +767,6 @@ const PILL_OVERHANG = 9;
 const CARD = { height: 56, twoLines: 68, nameLine: 13 };
 /** Routes enter a card as one bundle: this far apart, and never wider than `spread`. */
 const ROUTE_ENTRY = { pitch: 4, spread: 10 };
-const OFFER = { height: 44 };
 const TARGET = { height: 44 };
 /** `partial` is the room a closed stack adds to say how many of its machines answer. */
 const STACK = { height: 50, partial: 20, lift: 8 };
@@ -1104,9 +1059,7 @@ function layoutFleetGraphAt(
   const byId = new Map(graph.nodes.map((node) => [node.id, node]));
   const folds = stacks.filter((stack) => stack.kind === "environments");
   const folded = new Set(folds.flatMap((stack) => stack.memberIds));
-  const hosts = graph.nodes.filter(
-    (node) => (node.kind === "environment" || node.kind === "connect") && !folded.has(node.id),
-  );
+  const hosts = graph.nodes.filter((node) => node.kind === "environment" && !folded.has(node.id));
   const hostIndex = new Map(hosts.map((host, index) => [host.id, index]));
   const indexOf = (hostId: string) => hostIndex.get(hostId) ?? 0;
   const routesOf = new Map<string, FleetRouteEdge[]>();
@@ -1239,11 +1192,7 @@ function layoutFleetGraphAt(
   // A card's size follows its name alone, so what attaches to it never stretches it. The name
   // is measured in characters against the narrowest card, so no height changes with the width.
   const cardHeight = (host: FleetNode) =>
-    host.kind === "connect"
-      ? OFFER.height
-      : host.label.length > CARD.nameLine
-        ? CARD.twoLines
-        : CARD.height;
+    host.label.length > CARD.nameLine ? CARD.twoLines : CARD.height;
   const routeEntryPitch = (hostId: string) =>
     routesInto(hostId) < 2
       ? 0

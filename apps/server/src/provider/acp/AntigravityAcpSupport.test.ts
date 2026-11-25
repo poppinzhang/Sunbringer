@@ -147,7 +147,7 @@ describe("Antigravity Auto", () => {
         options: [{ optionId: "allow", name: "Allow", kind: "allow_once" }],
       });
       for (const t3Call of [
-        request("Run mcp_t3-code_t3_thread_list?"),
+        request("Run mcp_t3-code_sunbringer_thread_list?"),
         request("MCP Tool delegate_task", { ServerName: "t3-code", ToolName: "delegate_task" }),
       ]) {
         expect(antigravityPermissionDisposition(policy, t3Call)).toBe("allow");

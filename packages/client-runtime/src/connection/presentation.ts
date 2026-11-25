@@ -23,11 +23,6 @@ export interface EnvironmentConnectionPresentation {
   /** `error` as marked text, when the failure carries it. Read both through `connectionErrorText`. */
   readonly i18nError?: MarkedText;
   readonly traceId: string | null;
-  /**
-   * Set while reconnecting because the host has not approved this device yet. `error` then
-   * says where to approve it and shows the code, and is not a failure.
-   */
-  readonly awaitingApproval?: true;
 }
 
 /**
@@ -58,16 +53,6 @@ function failureError(
 export function presentConnectionState(
   state: SupervisorConnectionState,
 ): EnvironmentConnectionPresentation {
-  if (
-    (state.phase === "connecting" || state.phase === "backoff") &&
-    state.lastFailure?.reason === "approval-pending"
-  ) {
-    return {
-      phase: "reconnecting",
-      ...failureError(state.lastFailure),
-      awaitingApproval: true,
-    };
-  }
   switch (state.phase) {
     case "available":
       return { phase: "available", error: null, traceId: null };
@@ -117,9 +102,6 @@ export function connectionStatusText(
     case "connecting":
       return resolve(msg("Connecting..."));
     case "reconnecting":
-      if (connection.awaitingApproval) {
-        return error ?? resolve(msg("Waiting for approval on the host"));
-      }
       return error
         ? resolve(msg("Failed to connect. Reconnecting... Reason: {error}", { error }))
         : resolve(msg("Reconnecting..."));
@@ -138,27 +120,17 @@ export function connectionStatusTitle(
   connection: EnvironmentConnectionPresentation,
   resolve: MFunctionType = mFallback,
 ): string {
-  if (connection.awaitingApproval) {
-    return resolve(msg("Waiting for approval"));
-  }
   if (connection.phase === "reconnecting" && connection.error) {
     return resolve(msg("Failed to connect. Reconnecting..."));
   }
   return connectionStatusText({ ...connection, error: null }, resolve);
 }
 
-/**
- * The T3 Connect address wins whenever it is known: it works for agents anywhere, while the
- * connected route is often a LAN or loopback address. SSH routes ride a local forward that
- * disappears with the client, so they have no stable address.
- */
+/** SSH routes ride a local forward that disappears with the client, so they have no stable address. */
 export function environmentMcpUrl(input: {
   readonly entry: ConnectionCatalogEntry;
-  readonly relayHttpBaseUrl?: string | undefined;
   readonly connectedTarget?: ConnectionTarget | null | undefined;
 }): string | null {
-  const relayMcpUrl = input.relayHttpBaseUrl ? mcpUrlFromBase(input.relayHttpBaseUrl) : null;
-  if (relayMcpUrl !== null) return relayMcpUrl;
   const connectedRouteId = input.connectedTarget ? connectionRouteId(input.connectedTarget) : null;
   const routes = connectionRoutes(input.entry);
   const connectedRoute = routes.find(
@@ -189,8 +161,6 @@ export function connectionCatalogDisplayUrl(entry: ConnectionCatalogEntry): stri
   switch (entry.target._tag) {
     case "PrimaryConnectionTarget":
       return entry.target.httpBaseUrl;
-    case "RelayConnectionTarget":
-      return null;
     case "BearerConnectionTarget":
       return Option.isSome(entry.profile) && entry.profile.value._tag === "BearerConnectionProfile"
         ? entry.profile.value.httpBaseUrl

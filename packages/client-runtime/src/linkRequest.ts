@@ -11,11 +11,9 @@ import {
   type ServerConfig,
 } from "@t3tools/contracts";
 import { isLocalLoopbackHost } from "@t3tools/shared/hostClassification";
-import * as Option from "effect/Option";
 
 import type { EnvironmentPresentation } from "./connection/presentation.ts";
 import { connectionRoutes, routeHttpBaseUrl } from "./connection/routes.ts";
-import type { RelayDiscoveredEnvironment } from "./relay/discovery.ts";
 import { mFallback, msg } from "gt-i18n";
 import type { MFunctionType } from "gt-i18n/types";
 
@@ -82,14 +80,12 @@ export interface LinkableMachine {
   readonly label: string;
   readonly machine: EnvironmentMachineKind;
   readonly connected: boolean;
-  /** Found on the user's T3 Connect account rather than saved in this client. */
-  readonly connectOnly: boolean;
   /** Whether the thread's environment already has a link to it. */
   readonly linked: boolean;
   /**
    * Where the client knows it answers, most preferred first: the addresses it
-   * reports, then its saved routes, then its T3 Connect address. The server
-   * keeps only those that answer as this machine. Empty for a machine reached
+   * reports, then its saved routes. The server keeps only those that answer as
+   * this machine. Empty for a machine reached
    * only over SSH or loopback, which name this client's device.
    */
   readonly urls: ReadonlyArray<string>;
@@ -102,10 +98,8 @@ const isLoopbackUrl = (url: string) => {
 };
 
 /**
- * The catalog's machines other than the thread's own, in catalog order, then those only T3
- * Connect knows. `links` are the thread environment's; an expired one no longer counts as
- * linked. `connect` is what relay discovery found, and a server reaches a machine there as a
- * browser does, so its Connect address is usable.
+ * The catalog's machines other than the thread's own, in catalog order. `links` are the thread
+ * environment's; an expired one no longer counts as linked.
  */
 export function linkableMachines(input: {
   readonly environments: ReadonlyArray<
@@ -114,60 +108,29 @@ export function linkableMachines(input: {
   /** Null lists every machine, for a view that is not about one environment. */
   readonly threadEnvironmentId: EnvironmentId | null;
   readonly links: ReadonlyArray<Pick<PeerLinkSummary, "environmentId" | "status">>;
-  readonly connect: ReadonlyMap<string, RelayDiscoveredEnvironment>;
 }): ReadonlyArray<LinkableMachine> {
   const linkedIds = new Set(
     input.links.flatMap((link) => (link.status === "expired" ? [] : [link.environmentId])),
   );
-  const saved = input.environments
+  return input.environments
     .filter((environment) => environment.environmentId !== input.threadEnvironmentId)
     .map((environment) => {
       const reported = (environment.serverConfig?.directEndpoints ?? []).map(
         (endpoint) => endpoint.httpBaseUrl,
       );
       const routes = connectionRoutes(environment.entry).flatMap((route) => {
-        const url = route.target._tag === "RelayConnectionTarget" ? null : routeHttpBaseUrl(route);
+        const url = routeHttpBaseUrl(route);
         return url === null ? [] : [url];
       });
-      const connect = input.connect.get(environment.environmentId)?.environment.endpoint;
       return {
         environmentId: environment.environmentId,
         label: environment.entry.target.label,
         machine: resolveEnvironmentMachineKind(environment.serverConfig),
         connected: environment.connection.phase === "connected",
-        connectOnly: false,
         linked: linkedIds.has(environment.environmentId),
-        urls: [
-          ...new Set([
-            ...reported,
-            ...routes,
-            ...(connect === undefined ? [] : [connect.httpBaseUrl]),
-          ]),
-        ].filter((url) => !isLoopbackUrl(url)),
+        urls: [...new Set([...reported, ...routes])].filter((url) => !isLoopbackUrl(url)),
       };
     });
-  const savedIds = new Set<string>(saved.map((machine) => machine.environmentId));
-  const connectOnly = [...input.connect.values()]
-    .filter(
-      ({ environment }) =>
-        environment.environmentId !== input.threadEnvironmentId &&
-        !savedIds.has(environment.environmentId),
-    )
-    .map(({ environment, status }) => {
-      const descriptor = Option.getOrUndefined(status)?.descriptor;
-      return {
-        environmentId: environment.environmentId,
-        label: environment.label,
-        machine: resolveEnvironmentMachineKind(
-          descriptor === undefined ? null : { environment: descriptor },
-        ),
-        connected: false,
-        connectOnly: true,
-        linked: linkedIds.has(environment.environmentId),
-        urls: [environment.endpoint.httpBaseUrl].filter((url) => !isLoopbackUrl(url)),
-      };
-    });
-  return [...saved, ...connectOnly];
 }
 
 const words = (text: string) =>

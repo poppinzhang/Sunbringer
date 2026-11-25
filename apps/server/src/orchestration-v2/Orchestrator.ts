@@ -1,6 +1,5 @@
 import type {
   OrchestrationV2ThreadLinkMetadata,
-  GuestShareId,
   OrchestrationV2SearchThreadInput,
   OrchestrationV2SearchThreadResult,
   OrchestrationV2ThreadHistoryPage,
@@ -407,7 +406,7 @@ export type OrchestratorV2Error = typeof OrchestratorV2Error.Type;
 export interface OrchestratorV2DispatchResult {
   readonly sequence: number;
   readonly storedEvents: ReadonlyArray<OrchestrationV2StoredEvent>;
-  /** The command id was already accepted; analytics skip it. */
+  /** The command id was already accepted. */
   readonly replayed?: true;
 }
 
@@ -548,9 +547,6 @@ export interface OrchestratorV2Shape {
   readonly getThreadShell: (
     threadId: ThreadId,
   ) => Effect.Effect<OrchestrationV2ThreadShell | null, OrchestratorV2Error>;
-  readonly findGuestShareThreadId: (
-    shareId: GuestShareId,
-  ) => Effect.Effect<ThreadId | null, OrchestratorV2Error>;
   /** Titles of the given threads that exist, archived ones included. */
   readonly getThreadLinkMetadata: (
     threadIds: ReadonlyArray<ThreadId>,
@@ -718,7 +714,6 @@ function commandThreadId(command: OrchestrationV2ServerCommand): ThreadId {
       return command.parentThreadId;
     case "secret_request.record":
     case "link_request.record":
-    case "feedback_request.record":
       return command.threadId;
     case "thread.fork":
     case "thread.merge_back":
@@ -792,7 +787,7 @@ const WORKSPACE_PREPARATION_INPUT = "Preparing workspace";
 /** How long automatic settlement waits for a queued turn to start. */
 export const QUEUED_TURN_START_GRACE_MS = 2 * 60 * 1_000;
 const RUNTIME_REQUEST_DELIVERY_FAILED_MESSAGE =
-  "T3 Code could not confirm that your answer reached the agent. If the run stays stuck, stop it and try again.";
+  "Sunbringer could not confirm that your answer reached the agent. If the run stays stuck, stop it and try again.";
 
 function withoutPreparationResult(
   item: Extract<OrchestrationV2TurnItem, { readonly type: "command_execution" }>,
@@ -3821,7 +3816,7 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
       }
       return plan.parentRun?.id;
     }
-    // task_status and t3_thread_read use distinct command IDs, so two
+    // task_status and sunbringer_thread_read use distinct command IDs, so two
     // valid observations can race after their read preflight. Re-emit the
     // existing task row so the second dispatch is a successful idempotent
     // no-op rather than "already acknowledged/disposed" or empty-events.
@@ -11245,98 +11240,6 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
     },
   );
 
-  /** Records or updates the card for a feedback report the user asked the agent to send. */
-  const dispatchFeedbackRequestRecord = Effect.fn("orchestrationV2.dispatch.feedbackRequestRecord")(
-    function* (
-      command: Extract<
-        OrchestrationV2InternalCommand,
-        { readonly type: "feedback_request.record" }
-      >,
-      events: Ref.Ref<Array<OrchestrationV2DomainEvent>>,
-    ) {
-      const projection = yield* projectionStore
-        .getThreadRecords(
-          command.threadId,
-          ["runs", "nodes", "turnItems", "attempts", "providerTurns"],
-          { turnItemTypes: ["feedback_request"], messageRoles: [] },
-        )
-        .pipe(
-          Effect.mapError(
-            (cause) => new OrchestratorProjectionError({ threadId: command.threadId, cause }),
-          ),
-        );
-      const fail = (cause: string) =>
-        new OrchestratorDispatchError({
-          commandId: command.commandId,
-          commandType: command.type,
-          cause,
-        });
-      const run = projection.runs.find((candidate) => candidate.id === command.runId);
-      const existing = projection.turnItems.find((item) => item.id === command.turnItemId);
-      if (
-        existing !== undefined &&
-        (existing.type !== "feedback_request" || existing.runId !== command.runId)
-      ) {
-        return yield* fail(
-          `Turn item ${command.turnItemId} is not a feedback report of run ${command.runId}.`,
-        );
-      }
-      // A decided card stays decided, so a late close cannot reopen or relabel it.
-      if (existing !== undefined && existing.feedbackStatus !== "pending") return;
-      if (existing !== undefined && command.feedbackStatus === "pending") return;
-      if (run === undefined) return yield* fail(`Run ${command.runId} does not exist.`);
-      // Only a new card must sit on the run's current root. A steering restart can replace the
-      // root before the user answers, and the answer must still close the card.
-      if (existing === undefined && run.rootNodeId !== command.nodeId) {
-        return yield* fail(`Node ${command.nodeId} is not the root of run ${command.runId}.`);
-      }
-      const nodeId = existing?.nodeId ?? command.nodeId;
-      const now = yield* DateTime.now;
-      const pending = command.feedbackStatus === "pending";
-      yield* emit(
-        events,
-        command,
-      )({
-        type: "turn-item.updated",
-        threadId: command.threadId,
-        runId: command.runId,
-        ...(nodeId === null ? {} : { nodeId }),
-        providerInstanceId: run.providerInstanceId,
-        occurredAt: now,
-        payload: {
-          id: command.turnItemId,
-          threadId: command.threadId,
-          runId: command.runId,
-          nodeId,
-          providerThreadId: existing?.providerThreadId ?? run.providerThreadId,
-          providerTurnId:
-            existing === undefined
-              ? (providerTurnForRun(projection, run)?.id ?? null)
-              : existing.providerTurnId,
-          nativeItemRef: null,
-          parentItemId: null,
-          ordinal: existing?.ordinal ?? (yield* nextTurnItemOrdinal(projection)),
-          status: pending
-            ? "waiting"
-            : command.feedbackStatus === "sent"
-              ? "completed"
-              : "cancelled",
-          title: "Feedback for the T3 team",
-          startedAt: existing?.startedAt ?? now,
-          completedAt: pending ? null : now,
-          updatedAt: now,
-          type: "feedback_request",
-          preview: command.preview,
-          // An answered card keeps only what was sent, so its answer drops the unsent text.
-          ...(command.conversationTrace === undefined
-            ? {}
-            : { conversationTrace: command.conversationTrace }),
-          feedbackStatus: command.feedbackStatus,
-        },
-      });
-    },
-  );
-
   /**
    * Records or updates the card for a link an agent asked the user to make.
    * The pairing code goes straight to the link and never through orchestration.
@@ -16453,9 +16356,6 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
       case "secret_request.record":
         yield* dispatchSecretRequestRecord(command, events);
         break;
-      case "feedback_request.record":
-        yield* dispatchFeedbackRequestRecord(command, events);
-        break;
       case "link_request.record":
         yield* dispatchLinkRequestRecord(command, events, effects);
         break;
@@ -17594,11 +17494,6 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
       return projectionStore
         .getThreadShell(threadId)
         .pipe(Effect.mapError((cause) => new OrchestratorProjectionError({ threadId, cause })));
-    }),
-    findGuestShareThreadId: Effect.fn("OrchestratorV2.findGuestShareThreadId")(function (shareId) {
-      return projectionStore
-        .findGuestShareThreadId(shareId)
-        .pipe(Effect.mapError(shellProjectionError));
     }),
     getThreadLinkMetadata: Effect.fn("OrchestratorV2.getThreadLinkMetadata")(function (threadIds) {
       return projectionStore

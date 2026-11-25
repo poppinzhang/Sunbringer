@@ -126,8 +126,8 @@ impl LoadedScript {
         connection
             .call_method(
                 Some(destination.as_str()),
-                "/com/t3tools/KdeCapture",
-                Some("com.t3tools.KdeCapture"),
+                "/com/sunbringer/KdeCapture",
+                Some("com.sunbringer.KdeCapture"),
                 "Reply",
                 &(value,),
             )

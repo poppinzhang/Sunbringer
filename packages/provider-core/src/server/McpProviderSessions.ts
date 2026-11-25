@@ -2,7 +2,7 @@
 import * as NodeCrypto from "node:crypto";
 import type { ThreadId } from "@t3tools/contracts";
 import type { HtmlRenderReference } from "@t3tools/shared/htmlRender";
-import { stableStringify } from "@t3tools/shared/relaySigning";
+import { stableStringify } from "@t3tools/shared/stableStringify";
 import { resolveT3McpToolId } from "@t3tools/shared/t3McpToolPresentation";
 import * as Context from "effect/Context";
 import * as Effect from "effect/Effect";

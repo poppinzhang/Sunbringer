@@ -88,7 +88,7 @@ const DELIVERY_HEADERS = [
   "webhook-id",
   "idempotency-key",
 ];
-// The relay's limit for one hook, kept here too: a hook's URL can be called without the relay.
+// A hook's URL is callable by anyone who can reach this environment, so each hook is rate limited.
 const HOOK_RUNS_PER_MINUTE = 60;
 const CANCEL_WAITS = Duration.seconds(30);
 const decodeTurnWatch = Schema.decodeUnknownEffect(Schema.toCodecJson(TurnWatch));

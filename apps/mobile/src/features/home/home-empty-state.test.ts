@@ -12,7 +12,6 @@ function connectingEnvironment(
     environmentId: EnvironmentId.make("environment-1"),
     environmentLabel: "corex",
     displayUrl: "",
-    isRelayManaged: false,
     isEnabled: true,
     connectionState,
     connectionError,

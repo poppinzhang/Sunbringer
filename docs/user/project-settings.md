@@ -116,9 +116,10 @@ Leaving an edited form asks before discarding unsaved changes.
 
 In **Settings → Scheduled tasks**, choose **On webhook**
 as a task's schedule to run it whenever another service calls its URL, such as
-GitHub on a new pull request or a CI job that failed. A public URL needs a
-[T3 Connect](remote-access.md) managed tunnel; after you save the task, copy
-its URL from the editor. Without one, the editor shows only the URL's path.
+GitHub on a new pull request or a CI job that failed. After you save the task,
+copy its URL from the editor. It uses the address this device reaches the
+environment at, so a sender elsewhere needs its own route to that machine, such
+as Tailscale or a reverse proxy you run.
 **Rotate** replaces the URL and the old one stops working.
 
 The prompt decides what the agent sees. Placeholders pull values out of the
@@ -173,12 +174,7 @@ requests and the prompt each one produced.
 
 If the environment is offline, the sender gets an error and nothing runs;
 redeliver from the sender, such as GitHub's **Recent Deliveries**, once it is
-back. To have T3 Connect keep requests instead, turn on **Hold webhooks while
-offline** in **Settings → Sharing & access**. T3 Connect then stores requests to a
-T3 Connect URL for up to 24 hours and delivers them when the environment
-returns. Leave it off if you don't want request bodies stored outside your
-machine. To skip requests that waited too long, set **Skip requests older
-than** on the task.
+back.
 
 ## Defaults and inheritance
 
@@ -190,11 +186,11 @@ project crumb.
 The Projects category, under Code, holds the project's name, icon, actions,
 checkouts and removal. Actions belong to a project: editing them creates the project's own list
 on each selected environment, and reset returns to the environment's shared list. A project's
-`t3.json` actions can be imported there. When a project has several checkouts on one environment,
+`sunbringer.json` actions can be imported there. When a project has several checkouts on one environment,
 choose one in the scope line at the top to see or change only that checkout's settings.
 
-Settings a repository can also declare in `t3.json`, such as the workspace for new threads,
-resolve in one order: a project override, then the environment setting, then `t3.json`, then the
+Settings a repository can also declare in `sunbringer.json`, such as the workspace for new threads,
+resolve in one order: a project override, then the environment setting, then `sunbringer.json`, then the
 built-in default. Leave a setting on **Inherit** to let the next tier decide.
 Browser access changes apply when an agent session next starts.
 
@@ -202,13 +198,13 @@ New worktrees initialize git submodules recursively. If that step is slow becaus
 declares many nested submodules, set **Submodules** in **Settings → Worktrees** under Advanced (with the project
 selected to override it there) to **Top level only** to stop at the ones the repository declares
 itself, or **Skip** to leave them for a setup script. It resolves in the same order as the
-workspace default: a `"worktreeSubmodules"` value in the `t3.json` of the branch being checked out
+workspace default: a `"worktreeSubmodules"` value in the `sunbringer.json` of the branch being checked out
 applies when the project and environment are both on **Inherit**.
 
 New worktrees check out every file. For a large repository, set `"worktreeSparsePatternsPath"` in
-`t3.json` to a repository-relative file of git sparse-checkout patterns in non-cone syntax. New
+`sunbringer.json` to a repository-relative file of git sparse-checkout patterns in non-cone syntax. New
 worktrees then check out only the matching files, before any other file is written. Both files are
-read from the branch being checked out, so the patterns can leave out `t3.json` and `.gitmodules`.
+read from the branch being checked out, so the patterns can leave out `sunbringer.json` and `.gitmodules`.
 If the pattern file is missing, creating the worktree fails instead of checking out everything.
 Submodules still follow **Submodules** above, also under excluded paths; set it to **Skip** to leave
 them empty. The first sparse worktree turns on Git's `extensions.worktreeConfig` for the repository.
@@ -216,7 +212,7 @@ This needs Git 2.35 or newer.
 
 ## Worktree location
 
-New worktrees go in the `worktrees` folder of the T3 home directory. To put them somewhere else,
+New worktrees go in the `worktrees` folder of the Sunbringer home directory. To put them somewhere else,
 such as another drive, set **Settings → Worktrees → Worktree location** to an absolute path like
 `D:\worktrees` or `~/worktrees`. The setting is per machine. Existing worktrees stay where they
 are, and cleanup covers both the default folder and the custom one.
@@ -224,13 +220,13 @@ are, and cleanup covers both the default folder and the custom one.
 ## Fast worktree checkout on macOS
 
 Fast worktree checkout is a beta. Turn it on for each Mac in **Settings → Labs → Fast worktree
-checkout**. T3 Code then keeps a few recent checkouts of each repository in the `caches` folder of
-the T3 home directory. A new worktree is cloned from one of them with APFS copy-on-write, which is
+checkout**. Sunbringer then keeps a few recent checkouts of each repository in the `caches` folder of
+the Sunbringer home directory. A new worktree is cloned from one of them with APFS copy-on-write, which is
 about twice as fast as writing every file and makes the first `git status` in it fast as well.
 Turning it off deletes the cache.
 
 The first worktree of a repository uses Git's normal checkout and fills the cache. It needs Git 2.42
-or newer. Git's normal checkout is also used for worktrees on a different drive from the T3 home
+or newer. Git's normal checkout is also used for worktrees on a different drive from the Sunbringer home
 directory, sparse checkouts, repositories whose attributes use filters such as Git LFS, and
 repositories whose checkout settings changed.
 
@@ -285,7 +281,7 @@ working. Current logs, message attachments, and browser profiles are kept.
 
 Select the project and open Project to choose an icon, emoji, monogram, or image. The choice applies to
 every checkout in the project group and appears on connected clients. Choose **Automatic** to let
-T3 Code detect an icon again.
+Sunbringer detect an icon again.
 
 Choose **Monogram** in the icon picker to set one or two letters or numbers and a color.
 
@@ -299,6 +295,6 @@ In Source control & issues, enable **Automatically pull** to keep the default-br
 with its configured upstream. Choose an environment to set the default or a project to override it.
 On mobile, use **Settings → Source control & issues** to change selected environment defaults or project overrides.
 
-T3 Code only pulls when it can fast-forward and the checkout has no changed files, untracked files,
+Sunbringer only pulls when it can fast-forward and the checkout has no changed files, untracked files,
 or local commits. It skips checkouts on another branch or without an upstream. If a checkout has
 local work, resolve it yourself before automatic pulls can resume.

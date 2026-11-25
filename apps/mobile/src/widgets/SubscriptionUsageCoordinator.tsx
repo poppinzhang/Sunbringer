@@ -2,12 +2,11 @@ import { useAtomValue } from "@effect/atom-react";
 import { Atom } from "effect/reactivity";
 import { useLocale, useMessages } from "gt-react-native";
 import * as Linking from "expo-linking";
-import { useEffect, useEffectEvent } from "react";
+import { useEffect } from "react";
 import { Platform } from "react-native";
 import { useAppearancePreferences } from "../features/settings/appearance/AppearancePreferencesProvider";
 import { environmentCatalog } from "../connection/catalog";
 import { environmentPresentations } from "../state/presentation";
-import { republishAgentActivityWidget } from "./publishAgentActivityWidget";
 import { publishSubscriptionUsage } from "./publishSubscriptionUsage";
 import { buildSubscriptionUsageSnapshot } from "./subscriptionUsageSnapshot";
 import { createWidgetTheme } from "./widgetTheme";
@@ -71,18 +70,5 @@ export function SubscriptionUsageCoordinator() {
     // oxlint-disable-next-line react/exhaustive-effect-dependencies -- Android stores resolved colors; System appearance changes must republish them.
     androidAppearance,
   ]);
-  const republishActivity = useEffectEvent(() => {
-    republishAgentActivityWidget(resolve).catch((error: unknown) => {
-      console.warn("Could not update agent activity widget", error);
-    });
-  });
-  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- republishes the agent activity widget's copy in the new UI language
-  useEffect(
-    () => republishActivity(),
-    [
-      // oxlint-disable-next-line react/exhaustive-effect-dependencies -- the widget's copy follows the UI language.
-      locale,
-    ],
-  );
   return null;
 }

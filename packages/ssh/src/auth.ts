@@ -77,29 +77,29 @@ function joinSshAskpassPath(
 }
 
 const ASKPASS_POSIX_SCRIPT = `#!/bin/sh
-# Invoked by ssh via SSH_ASKPASS when T3 Code re-runs ssh with a cached password
+# Invoked by ssh via SSH_ASKPASS when Sunbringer re-runs ssh with a cached password
 # from the renderer's in-app prompt. We never expose a native dialog here - if
-# T3_SSH_AUTH_SECRET is missing, that's a caller bug and we fail loudly.
-if [ "\${T3_SSH_AUTH_SECRET+x}" = "x" ]; then
-  printf "%s\\n" "$T3_SSH_AUTH_SECRET"
+# SUNBRINGER_SSH_AUTH_SECRET is missing, that's a caller bug and we fail loudly.
+if [ "\${SUNBRINGER_SSH_AUTH_SECRET+x}" = "x" ]; then
+  printf "%s\\n" "$SUNBRINGER_SSH_AUTH_SECRET"
   exit 0
 fi
-printf 'T3 Code ssh-askpass invoked without T3_SSH_AUTH_SECRET.\\n' >&2
+printf 'Sunbringer ssh-askpass invoked without SUNBRINGER_SSH_AUTH_SECRET.\\n' >&2
 exit 1
 `;
 
 // Windows has no helper form every ssh can start. Win32-OpenSSH starts `"<node>" "<this file>"`
 // directly; Cygwin/MSYS ssh (Git for Windows) execs ssh-askpass.sh through its own sh. Either
 // way ssh appends the prompt as a plain trailing argument, which the helpers never read.
-const ASKPASS_WINDOWS_NODE_SCRIPT = `// Invoked by ssh via SSH_ASKPASS when T3 Code re-runs ssh with a cached password
-// from the renderer's in-app prompt. Answers from T3_SSH_AUTH_SECRET only and
+const ASKPASS_WINDOWS_NODE_SCRIPT = `// Invoked by ssh via SSH_ASKPASS when Sunbringer re-runs ssh with a cached password
+// from the renderer's in-app prompt. Answers from SUNBRINGER_SSH_AUTH_SECRET only and
 // never reads its arguments; if the secret is missing, that's a caller bug and
 // we fail loudly.
-if ("T3_SSH_AUTH_SECRET" in process.env) {
-  process.stdout.write((process.env.T3_SSH_AUTH_SECRET || "") + "\\n");
+if ("SUNBRINGER_SSH_AUTH_SECRET" in process.env) {
+  process.stdout.write((process.env.SUNBRINGER_SSH_AUTH_SECRET || "") + "\\n");
   process.exit(0);
 }
-process.stderr.write("T3 Code ssh-askpass invoked without T3_SSH_AUTH_SECRET.\\n");
+process.stderr.write("Sunbringer ssh-askpass invoked without SUNBRINGER_SSH_AUTH_SECRET.\\n");
 process.exit(1);
 `;
 
@@ -238,7 +238,7 @@ export const buildSshChildEnvironment = Effect.fn("ssh/auth.buildSshChildEnviron
       : yield* ensureSshAskpassHelpers({ directory: input.askpassDirectory });
 
   const authSecretEnv =
-    input.authSecret === undefined ? {} : { T3_SSH_AUTH_SECRET: input.authSecret ?? "" };
+    input.authSecret === undefined ? {} : { SUNBRINGER_SSH_AUTH_SECRET: input.authSecret ?? "" };
 
   if (platform === "win32") {
     if (!(yield* isWin32OpenSsh())) {

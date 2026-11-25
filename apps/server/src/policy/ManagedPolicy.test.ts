@@ -78,17 +78,15 @@ it.layer(NodeServices.layer)("ManagedPolicy.load", (it) => {
         JSON.stringify({
           schemaVersion: 1,
           organization: "Example Corp",
-          limits: { webhookTasks: false, telemetry: true, previewTunnel: false },
+          limits: { webhookTasks: false, previewTunnel: true },
         }),
       );
       assert.deepEqual(policy.summary?.limits, {
         webhookTasks: false,
-        telemetry: true,
-        previewTunnel: false,
+        previewTunnel: true,
       });
       assert.equal(ManagedPolicy.deniedBy(policy, "webhookTasks"), "Example Corp");
-      assert.equal(ManagedPolicy.deniedBy(policy, "previewTunnel"), "Example Corp");
-      assert.isUndefined(ManagedPolicy.deniedBy(policy, "telemetry"));
+      assert.isUndefined(ManagedPolicy.deniedBy(policy, "previewTunnel"));
     }),
   );
 
@@ -99,7 +97,7 @@ it.layer(NodeServices.layer)("ManagedPolicy.load", (it) => {
         [
           "{ not json",
           // An unknown key may be a restriction from a newer release.
-          JSON.stringify({ ...base, limits: { connect: false, futureLimit: true } }),
+          JSON.stringify({ ...base, limits: { webhookTasks: false, futureLimit: true } }),
           JSON.stringify({ ...base, settings: { notASetting: { value: 1, locked: true } } }),
           JSON.stringify({
             ...base,
@@ -215,7 +213,10 @@ it.layer(NodeServices.layer)("ManagedPolicy.load", (it) => {
         "environment",
       ]);
       // The host variable that replaces Codex's launch arguments is ignored too.
-      const host = { PATH: "/usr/bin", T3CODE_CODEX_LAUNCH_ARGS: "-c mcp_servers.x.command=sh" };
+      const host = {
+        PATH: "/usr/bin",
+        SUNBRINGER_CODEX_LAUNCH_ARGS: "-c mcp_servers.x.command=sh",
+      };
       const managedHost = providerHostEnvironment(policy.summary, host);
       assert.deepEqual(managedHost, { PATH: "/usr/bin" });
       // A PATH refresh after launch reaches drivers that hold the managed copy.
@@ -238,7 +239,10 @@ it.layer(NodeServices.layer)("ManagedPolicy.load", (it) => {
               driver: codex,
               environment: [
                 variable("HTTPS_PROXY", "http://mine"),
-                variable("T3CODE_CODEX_LAUNCH_ARGS", "--dangerously-bypass-approvals-and-sandbox"),
+                variable(
+                  "SUNBRINGER_CODEX_LAUNCH_ARGS",
+                  "--dangerously-bypass-approvals-and-sandbox",
+                ),
               ],
             },
           },
@@ -290,7 +294,9 @@ it.layer(NodeServices.layer)("ManagedPolicy.load", (it) => {
           saved._tag === "Allowed"
             ? (saved.settings.providerInstances[codexId]?.environment ?? [])
             : [];
-        assert.isTrue(savedEnvironment.some((entry) => entry.name === "T3CODE_CODEX_LAUNCH_ARGS"));
+        assert.isTrue(
+          savedEnvironment.some((entry) => entry.name === "SUNBRINGER_CODEX_LAUNCH_ARGS"),
+        );
         // A home path setting would rewrite a locked home variable at launch, so the lock owns it.
         const claude = ProviderDriverKind.make("claudeAgent");
         const homeLocked = yield* ManagedPolicy.fromDocument("/test/policy.json", {
@@ -352,7 +358,7 @@ it.layer(NodeServices.layer)("ManagedPolicy.load", (it) => {
           "config.serverUrl",
         );
         // The same override from the environment that starts the server is ignored too.
-        const host = { PATH: "/usr/bin", T3CODE_CODEX_LAUNCH_ARGS: "--yolo" };
+        const host = { PATH: "/usr/bin", SUNBRINGER_CODEX_LAUNCH_ARGS: "--yolo" };
         assert.deepEqual(providerHostEnvironment((yield* policyOn("linux")).summary, host), {
           PATH: "/usr/bin",
         });

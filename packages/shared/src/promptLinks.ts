@@ -1,4 +1,3 @@
-import { DEFAULT_HOSTED_APP_URL } from "./connectAuth.ts";
 import { parseUrl } from "./url.ts";
 
 export const PROMPT_LINK_MAX_PROMPT_LENGTH = 8_000;
@@ -112,15 +111,15 @@ export type PromptLinkError =
 function englishPromptLinkError(error: PromptLinkError): string {
   switch (error) {
     case "prompt-too-long":
-      return `This prompt is longer than ${PROMPT_LINK_MAX_PROMPT_LENGTH.toLocaleString("en-US")} characters, so T3 Code did not open it.`;
+      return `This prompt is longer than ${PROMPT_LINK_MAX_PROMPT_LENGTH.toLocaleString("en-US")} characters, so Sunbringer did not open it.`;
     case "prompt-only-hidden":
-      return "This prompt had only hidden characters, so it may be malicious. T3 Code did not open it.";
+      return "This prompt had only hidden characters, so it may be malicious. Sunbringer did not open it.";
     case "unreadable-pull-request":
-      return "This link names a pull request T3 Code cannot read.";
+      return "This link names a pull request Sunbringer cannot read.";
     case "missing-prompt":
       return "This link has no prompt.";
     case "unreadable-repository":
-      return "This link names a repository T3 Code cannot read.";
+      return "This link names a repository Sunbringer cannot read.";
   }
 }
 
@@ -196,23 +195,25 @@ export function buildNewThreadLink(input: {
   readonly model?: string | null;
   readonly origin?: string;
 }): string {
-  const url = new URL("/new", input.origin ?? DEFAULT_HOSTED_APP_URL);
-  url.searchParams.set("prompt", input.prompt);
+  const params = new URLSearchParams();
+  params.set("prompt", input.prompt);
   if (input.repository) {
-    url.searchParams.set("repo", `${input.repository.owner}/${input.repository.name}`);
+    params.set("repo", `${input.repository.owner}/${input.repository.name}`);
   }
-  if (input.provider) url.searchParams.set("provider", input.provider);
-  if (input.provider && input.model) url.searchParams.set("model", input.model);
-  return url.toString();
+  if (input.provider) params.set("provider", input.provider);
+  if (input.provider && input.model) params.set("model", input.model);
+  if (input.origin) {
+    const url = new URL("/new", input.origin);
+    url.search = params.toString();
+    return url.toString();
+  }
+  return `sunbringer://new?${params.toString()}`;
 }
 
-const APP_SCHEME = /^t3code(?:-[a-z]+)?:$/;
+const APP_SCHEME = /^sunbringer(?:-[a-z]+)?:$/;
 const THREAD_PATH = /^\/([^/]+)\/([^/]+)\/?$/;
 
-export function promptLinkAppPath(
-  value: string,
-  hostedAppUrl: string = DEFAULT_HOSTED_APP_URL,
-): string | null {
+export function promptLinkAppPath(value: string, currentOrigin?: string): string | null {
   const url = parseUrl(value);
   if (!url) return null;
   if (APP_SCHEME.test(url.protocol)) {
@@ -222,7 +223,7 @@ export function promptLinkAppPath(
     const thread = url.host === "threads" ? THREAD_PATH.exec(url.pathname) : null;
     return thread ? `/${thread[1]}/${thread[2]}${url.search}` : null;
   }
-  if (url.origin !== parseUrl(hostedAppUrl)?.origin) return null;
+  if (!currentOrigin || url.origin !== parseUrl(currentOrigin)?.origin) return null;
   if (url.pathname === "/new") return `/new${url.search}`;
   // The web app's own thread route is a link only with a prompt, so reloading a tab never asks.
   const thread = url.pathname.startsWith("/threads/")
@@ -233,7 +234,7 @@ export function promptLinkAppPath(
   return thread ? `/${thread[1]}/${thread[2]}${url.search}` : null;
 }
 
-export function promptLinkDeepLink(appPath: string, scheme = "t3code"): string {
+export function promptLinkDeepLink(appPath: string, scheme = "sunbringer"): string {
   const url = new URL(appPath, "https://app.invalid");
   const host = url.pathname === "/new" ? "new" : `threads${url.pathname}`;
   return `${scheme}://${host}${url.search}`;

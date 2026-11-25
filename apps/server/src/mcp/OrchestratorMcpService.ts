@@ -130,13 +130,7 @@ import {
   threadLinkFor,
 } from "./McpInvocationContext.ts";
 import * as Metrics from "../observability/Metrics.ts";
-import {
-  interactionModeRank,
-  resolveInteractionMode,
-  resolveRuntimeMode,
-  runtimeModeRank,
-  taskPrompt,
-} from "./delegatedTaskModes.ts";
+import { resolveInteractionMode, resolveRuntimeMode, taskPrompt } from "./delegatedTaskModes.ts";
 import { assertTargetWithinLimits, isLiveCallerShell, threadNotFound } from "./threadAccess.ts";
 import { WITHHELD, withoutWebhookUrlToken } from "../scheduledTasks/webhookUrlToken.ts";
 import * as SecretRequests from "../secrets/SecretRequests.ts";
@@ -288,7 +282,7 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function scheduledTaskSummary(task: ScheduledTask, mayRun: boolean): OrchestratorMcpScheduledTask {
+function scheduledTaskSummary(task: ScheduledTask): OrchestratorMcpScheduledTask {
   return {
     scheduledTaskId: task.id,
     title: task.title,
@@ -300,9 +294,6 @@ function scheduledTaskSummary(task: ScheduledTask, mayRun: boolean): Orchestrato
     schedule: task.schedule,
     nextRunAt: task.nextRunAt,
     lastRunStatus: task.lastRunStatus,
-    ...(task.webhook?.url == null || !mayRun || task.blockedByPolicy !== undefined
-      ? {}
-      : { webhookUrl: task.webhook.url }),
     ...(task.webhook === undefined
       ? {}
       : { webhookSignature: task.webhook.hasSecret ? "set" : "none" }),
@@ -1216,7 +1207,7 @@ function turnItemText(item: OrchestrationV2TurnItem): string | null {
     case "secret_request":
       return `Asked the user for ${item.label}: ${item.secretStatus}.`;
     case "feedback_request":
-      return `Asked the user to approve a ${item.preview.kind} report about ${item.preview.subject} for the T3 team: ${item.feedbackStatus}.`;
+      return `Asked the user to approve a ${item.preview.kind} report about ${item.preview.subject}: ${item.feedbackStatus}.`;
     case "link_request":
       return item.linkStatus === "linked"
         ? `Linked ${item.linkedLabel ?? item.url ?? "an environment"} (${item.linkedAccess}).`
@@ -1474,7 +1465,7 @@ const make = Effect.gen(function* () {
   const resolveProjectTarget = (
     parent: Pick<OrchestrationV2ThreadProjection, "thread"> | undefined,
     projectId: ProjectId | undefined,
-    missingMessage = "Pass projectId: this MCP client is not running inside a T3 thread.",
+    missingMessage = "Pass projectId: this MCP client is not running inside a Sunbringer thread.",
   ) =>
     projectId !== undefined
       ? Effect.succeed(projectId)
@@ -2359,46 +2350,6 @@ const make = Effect.gen(function* () {
     },
   );
 
-  const withinLimits = (
-    limits: {
-      readonly runtimeMode: RuntimeMode;
-      readonly interactionMode: ProviderInteractionMode;
-    },
-    modes: { readonly runtimeMode: RuntimeMode; readonly interactionMode: ProviderInteractionMode },
-  ) =>
-    runtimeModeRank(modes.runtimeMode) <= runtimeModeRank(limits.runtimeMode) &&
-    interactionModeRank(modes.interactionMode) <= interactionModeRank(limits.interactionMode);
-
-  /**
-   * Creation returns a webhook URL only to callers allowed to start its runs: never a read-only
-   * client, and a thread caller only with a live turn at modes covering every mode the task runs at.
-   */
-  const summarizeScheduledTask = Effect.fn("OrchestratorMcpService.summarizeScheduledTask")(
-    function* (
-      scope: McpInvocationScope,
-      caller: {
-        readonly parent: Pick<OrchestrationV2ThreadProjection, "thread" | "runs"> | undefined;
-        readonly limits: {
-          readonly runtimeMode: RuntimeMode;
-          readonly interactionMode: ProviderInteractionMode;
-        };
-      },
-      task: ScheduledTask,
-    ) {
-      const live =
-        caller.parent === undefined
-          ? scope.client?.access !== "read-only"
-          : Exit.isSuccess(yield* Effect.exit(assertLiveCaller(scope, caller.parent)));
-      const modes = yield* scheduledTaskRunModes(task).pipe(Effect.option);
-      return scheduledTaskSummary(
-        task,
-        live &&
-          Option.isSome(modes) &&
-          modes.value.every((mode) => withinLimits(caller.limits, mode)),
-      );
-    },
-  );
-
   const requireScheduledTaskWithinLimits = Effect.fn(
     "OrchestratorMcpService.requireScheduledTaskWithinLimits",
   )(function* (
@@ -2454,7 +2405,7 @@ const make = Effect.gen(function* () {
         return yield* failure(
           "invalid_request",
           parent === undefined
-            ? "bindToCurrentThread needs an agent running inside a T3 thread."
+            ? "bindToCurrentThread needs an agent running inside a Sunbringer thread."
             : "bindToCurrentThread binds to this thread, which belongs to a different project.",
         );
       }
@@ -2516,7 +2467,7 @@ const make = Effect.gen(function* () {
             failure("orchestration_error", `Could not schedule task: ${error.message}`),
           ),
         );
-      return yield* summarizeScheduledTask(scope, { parent, limits }, task);
+      return scheduledTaskSummary(task);
     }),
     listScheduledTasks: Effect.fn("OrchestratorMcpService.listScheduledTasks")(
       function* (scope, input) {
@@ -2536,7 +2487,7 @@ const make = Effect.gen(function* () {
                 (projectId === undefined || task.projectId === projectId) &&
                 (input.scheduledTaskId === undefined || task.id === input.scheduledTaskId),
             )
-            .map((task) => scheduledTaskSummary(task, false)),
+            .map((task) => scheduledTaskSummary(task)),
         };
       },
     ),
@@ -2552,7 +2503,7 @@ const make = Effect.gen(function* () {
           return yield* failure(
             "invalid_request",
             parent === undefined
-              ? "bindToCurrentThread needs an agent running inside a T3 thread."
+              ? "bindToCurrentThread needs an agent running inside a Sunbringer thread."
               : "bindToCurrentThread binds to this thread, which belongs to a different project.",
           );
         }
@@ -2614,7 +2565,7 @@ const make = Effect.gen(function* () {
               failure("orchestration_error", `Could not update scheduled task: ${error.message}`),
             ),
           );
-        return scheduledTaskSummary(task, false);
+        return scheduledTaskSummary(task);
       },
     ),
     deleteScheduledTask: Effect.fn("OrchestratorMcpService.deleteScheduledTask")(
@@ -3511,7 +3462,7 @@ const make = Effect.gen(function* () {
         : yield* resolveProjectTarget(
             parent,
             input.projectId,
-            "Pass projectId, or allProjects: true for every project. This MCP client is not running inside a T3 thread.",
+            "Pass projectId, or allProjects: true for every project. This MCP client is not running inside a Sunbringer thread.",
           );
       if (!input.allProjects && input.projectId !== undefined) {
         yield* requireProject(input.projectId);

@@ -16,7 +16,7 @@ export interface ThreadReferenceCopyTarget {
   readonly value: string;
   /** What a toast or palette row shows for the copy. */
   readonly description: string;
-  /** T3's clipboard format, which pastes a thread back into a composer as a chip. */
+  /** Sunbringer's clipboard format, which pastes a thread back into a composer as a chip. */
   readonly fragment?: ComposerContextClipboardFragment;
   readonly clipboardTarget: string;
   readonly successTitle: string;
@@ -24,7 +24,7 @@ export interface ThreadReferenceCopyTarget {
 }
 
 /**
- * A link that opens the thread from anywhere, through `hostedAppUrl`, this build's hosted app. It
+ * A link that opens the thread from anywhere, with an optional explicit `hostedAppUrl` origin. It
  * pastes back as a chip into any composer whose agent reads that thread's machine.
  */
 export function threadChipCopyTarget(

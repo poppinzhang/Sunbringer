@@ -311,7 +311,7 @@ const make = Effect.gen(function* () {
     (cause: unknown): TaskFolderError =>
       new TaskFolderError({ operation, detail: `${prefix}: ${failureDetail(cause)}`, cause });
 
-  // A project that lays its own thread folder out says so in its `t3.json`.
+  // A project that lays its own thread folder out says so in its `sunbringer.json`.
   const projectFile = (projectRoot: string) =>
     fileSystem.readFileString(path.join(projectRoot, T3_PROJECT_FILE_NAME)).pipe(
       Effect.map(parseT3ProjectFile),
@@ -341,12 +341,12 @@ const make = Effect.gen(function* () {
             ...hostEnvironment,
             // A `GIT_DIR` the server inherited would point the command's Git at another repository.
             ...VcsProcess.unsetInheritedRepositoryEnv(hostEnvironment, hostPlatform),
-            T3_PROJECT_ROOT: taskFolder.projectRoot,
-            T3_WORKTREE_ROOT: taskFolder.root,
-            T3_WORKTREE_PROJECT_PATH: taskFolder.projectPath,
-            T3_WORKTREE_BRANCH: branch,
-            T3_WORKTREE_BASE: baseBranch ?? "",
-            T3_WORKTREE_REPOSITORIES: repositories.join("\n"),
+            SUNBRINGER_PROJECT_ROOT: taskFolder.projectRoot,
+            SUNBRINGER_WORKTREE_ROOT: taskFolder.root,
+            SUNBRINGER_WORKTREE_PROJECT_PATH: taskFolder.projectPath,
+            SUNBRINGER_WORKTREE_BRANCH: branch,
+            SUNBRINGER_WORKTREE_BASE: baseBranch ?? "",
+            SUNBRINGER_WORKTREE_REPOSITORIES: repositories.join("\n"),
           },
           timeoutMs: LAYOUT_COMMAND_TIMEOUT_MS,
         })

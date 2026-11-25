@@ -25,7 +25,7 @@ const home = { key: "home", name: "Home" };
 const thread = { key: "thread", name: "Thread", params: { threadId: "draft-thread" } };
 const files = { key: "files", name: "ThreadFiles", params: thread.params };
 const settings = { key: "settings", name: "Settings" };
-const legal = { key: "legal", name: "SettingsLegal" };
+const legal = { key: "legal", name: "Connections" };
 
 function history(
   routes: StackNavigationState<ParamListBase>["routes"],
@@ -35,7 +35,7 @@ function history(
     type: "stack",
     stale: false,
     index: routes.length - 1,
-    routeNames: ["Home", "Thread", "ThreadFiles", "Settings", "SettingsLegal"],
+    routeNames: ["Home", "Thread", "ThreadFiles", "Settings", "Connections"],
     routes,
     preloadedRoutes: [],
   };
@@ -103,9 +103,9 @@ describe("workspace presentation envelope", () => {
 describe("workspace router projection", () => {
   it("keeps workspace flows beside Home and restores them after a modal closes", () => {
     const draft = { key: "draft", name: "Thread", params: { draft: {} } };
-    const modal = { key: "connect", name: "ConnectOnboarding" };
+    const modal = { key: "connections", name: "Connections" };
     const routes = [home, thread, draft, legal];
-    const isOverlay = (route: { name: string }) => route.name === "ConnectOnboarding";
+    const isOverlay = (route: { name: string }) => route.name === "Connections";
     expect(projectWorkspaceStack(history([...routes, modal]), isOverlay)).toEqual({
       primary: home,
       detail: [thread, draft, legal],

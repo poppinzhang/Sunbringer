@@ -4,26 +4,15 @@ import { webhookAddress } from "./webhookAddress.ts";
 
 const endpoint = {
   path: "/hooks/abc",
-  url: null,
   hasSecret: true,
 };
 
 describe("webhookAddress", () => {
-  it("returns the public endpoint URL copyable with no note", () => {
-    const result = webhookAddress(
-      { ...endpoint, url: "https://connect.example.com/hooks/abc" },
-      null,
-    );
-    expect(result.address).toBe("https://connect.example.com/hooks/abc");
-    expect(result.copyable).toBe(true);
-    expect(result.note).toBeNull();
-  });
-
-  it("is not copyable and points at T3 Connect when no base URL exists", () => {
+  it("shows only the path, not copyable, when no base URL exists", () => {
     const result = webhookAddress(endpoint, null);
     expect(result.address).toBe("/hooks/abc");
     expect(result.copyable).toBe(false);
-    expect(result.note).toContain("T3 Connect");
+    expect(result.note).toContain("path");
   });
 
   it("warns that loopback addresses only work on this computer", () => {

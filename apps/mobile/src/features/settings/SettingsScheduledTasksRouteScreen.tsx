@@ -16,7 +16,6 @@ import type {
   ScheduledTaskUpsertInput,
 } from "@t3tools/contracts";
 import {
-  MAX_WEBHOOK_DELIVERY_AGE_MINUTES,
   MAX_WEBHOOK_FILTERS,
   resolveEnvironmentMachineKind,
   scheduledTaskThreadMode,
@@ -33,7 +32,6 @@ import { resolvePastedPath } from "@t3tools/shared/path";
 import {
   DEFAULT_WEBHOOK_PROMPT,
   emptyWebhookFilterDraft,
-  parseMaxDeliveryAge,
   parseWebhookFilterDrafts,
   removeWebhookFilterDraft,
   WEBHOOK_FILTER_OPS,
@@ -821,24 +819,12 @@ function TaskForm({
         ? { ...draft.schedule, signature: liveTask.schedule.signature }
         : draft.schedule,
     );
-    if (
-      draft.schedule.mode === "webhook" &&
-      parseMaxDeliveryAge(draft.schedule.maxDeliveryAgeMinutes) === undefined
-    ) {
-      Dialog.alert(
-        gt("Invalid age limit"),
-        gt("Enter whole minutes from 1 to {max}, or leave it blank.", {
-          max: MAX_WEBHOOK_DELIVERY_AGE_MINUTES,
-        }),
-      );
-      return;
-    }
     if (draft.schedule.mode === "once" && !offersOnce) {
       Dialog.alert(
         gt("Once is not available here"),
         gt(
           "This environment runs an older {product}. Update it to schedule a one-time task, or pick another schedule.",
-          { product: "T3 Code" },
+          { product: "Sunbringer" },
         ),
       );
       return;
@@ -1349,20 +1335,6 @@ function TaskForm({
                 }
                 signatureConfigured={draft.schedule.signature !== null}
                 disabled={!canOperate || saving || environmentUnavailable}
-              />
-              <FormField
-                label={gt("Skip requests older than (minutes)")}
-                value={draft.schedule.maxDeliveryAgeMinutes}
-                placeholder={gt("Run every request")}
-                keyboardType="number-pad"
-                disabled={saving}
-                borderTop
-                onChange={(maxDeliveryAgeMinutes) =>
-                  setDraft((current) => ({
-                    ...current,
-                    schedule: { ...current.schedule, maxDeliveryAgeMinutes },
-                  }))
-                }
               />
               <WebhookFilterRows
                 filters={draft.schedule.filters}

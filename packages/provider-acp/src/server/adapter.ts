@@ -1067,11 +1067,11 @@ const ACP_MCP_CALL_LAUNCHER = [
   "@echo off",
   "setlocal EnableExtensions DisableDelayedExpansion",
   'set "ELECTRON_RUN_AS_NODE=1"',
-  "if not defined T3_ACP_MCP_ENTRYPOINT goto packaged",
-  '"%T3_ACP_MCP_NODE%" "%T3_ACP_MCP_ENTRYPOINT%" acp-mcp-call %*',
+  "if not defined SUNBRINGER_ACP_MCP_ENTRYPOINT goto packaged",
+  '"%SUNBRINGER_ACP_MCP_NODE%" "%SUNBRINGER_ACP_MCP_ENTRYPOINT%" acp-mcp-call %*',
   "exit /b %errorlevel%",
   ":packaged",
-  '"%T3_ACP_MCP_NODE%" acp-mcp-call %*',
+  '"%SUNBRINGER_ACP_MCP_NODE%" acp-mcp-call %*',
   "",
 ].join("\r\n");
 
@@ -1112,8 +1112,8 @@ function acpMcpContext(
         args: [...selfInvocationArgs(self, ["acp-mcp-bridge"])],
         env: [
           { name: "ELECTRON_RUN_AS_NODE", value: "1" },
-          { name: "T3_ACP_MCP_ENDPOINT", value: session.endpoint },
-          { name: "T3_ACP_MCP_AUTHORIZATION", value: session.authorizationHeader },
+          { name: "SUNBRINGER_ACP_MCP_ENDPOINT", value: session.endpoint },
+          { name: "SUNBRINGER_ACP_MCP_AUTHORIZATION", value: session.authorizationHeader },
         ],
       },
     ],
@@ -1141,12 +1141,12 @@ function acpMcpContext(
       // from its shell can find its T3 thread. Claude and Codex sessions set
       // the same variable (PortScanner.AGENT_THREAD_ENV; a string literal here
       // because this package cannot reach apps/server).
-      T3CODE_THREAD_ID: session.threadId,
-      T3_ACP_MCP_ENDPOINT: session.endpoint,
-      T3_ACP_MCP_AUTHORIZATION: session.authorizationHeader,
-      T3_ACP_MCP_NODE: self.command,
-      ...(self.entrypoint === undefined ? {} : { T3_ACP_MCP_ENTRYPOINT: self.entrypoint }),
-      ...(callLauncher === undefined ? {} : { T3_ACP_MCP_CALL: callLauncher }),
+      SUNBRINGER_THREAD_ID: session.threadId,
+      SUNBRINGER_ACP_MCP_ENDPOINT: session.endpoint,
+      SUNBRINGER_ACP_MCP_AUTHORIZATION: session.authorizationHeader,
+      SUNBRINGER_ACP_MCP_NODE: self.command,
+      ...(self.entrypoint === undefined ? {} : { SUNBRINGER_ACP_MCP_ENTRYPOINT: self.entrypoint }),
+      ...(callLauncher === undefined ? {} : { SUNBRINGER_ACP_MCP_CALL: callLauncher }),
     },
   };
 }
@@ -9134,7 +9134,7 @@ export const makeAcpAdapterV2 = Effect.fn("makeAcpAdapterV2")(function* (
                 recorded?.failure ??
                   makeProviderFailure({
                     class: "provider_error",
-                    message: `${flavor.runtimeHarness ?? driver} sent nothing for ${minutes} ${minutes === 1 ? "minute" : "minutes"}, so T3 Code stopped the turn and restarted the agent. Send a message to continue.`,
+                    message: `${flavor.runtimeHarness ?? driver} sent nothing for ${minutes} ${minutes === 1 ? "minute" : "minutes"}, so Sunbringer stopped the turn and restarted the agent. Send a message to continue.`,
                   }),
                 recorded === undefined
                   ? undefined
@@ -9299,7 +9299,6 @@ export const makeAcpAdapterV2 = Effect.fn("makeAcpAdapterV2")(function* (
           });
           const sessionSetup = yield* Ref.get(activeSessionSetup);
           const runtimeInstructions = buildRuntimeInstructions({
-            agentFeedback: instructionState.hasT3Mcp ? (turnInput.agentFeedback ?? "off") : "off",
             harness: flavor.runtimeHarness ?? driver,
             model: turnInput.modelSelection.model,
             runtimePolicy: turnInput.runtimePolicy,

@@ -6558,7 +6558,7 @@ it.layer(layerTest)("GitVcsDriver core integration", (it) => {
             GIT_TERMINAL_PROMPT: "1",
             SSH_ASKPASS: "ssh-askpass",
             SSH_ASKPASS_REQUIRE: "force",
-            T3_TEST_SSH_ASKPASS_LOG: sshLogPath,
+            SUNBRINGER_TEST_SSH_ASKPASS_LOG: sshLogPath,
           }),
         );
       }),
@@ -7866,7 +7866,7 @@ it.layer(layerTest)("GitVcsDriver core integration", (it) => {
       }).pipe(withGitFileProtocol),
     );
 
-    it.effect("sparse worktrees read .gitmodules and t3.json from HEAD", () =>
+    it.effect("sparse worktrees read .gitmodules and sunbringer.json from HEAD", () =>
       Effect.gen(function* () {
         const fileSystem = yield* FileSystem.FileSystem;
         const pathService = yield* Path.Path;
@@ -7883,7 +7883,7 @@ it.layer(layerTest)("GitVcsDriver core integration", (it) => {
         const worktrees = yield* makeTmpDir("git-worktrees-");
 
         const createSparse = Effect.fn(function* (projectFile: string, branch: string) {
-          yield* writeTextFile(cwd, "t3.json", projectFile);
+          yield* writeTextFile(cwd, "sunbringer.json", projectFile);
           yield* git(cwd, ["add", "."]);
           yield* git(cwd, ["commit", "-m", branch]);
           const sparsePath = pathService.join(worktrees, branch);
@@ -7895,7 +7895,7 @@ it.layer(layerTest)("GitVcsDriver core integration", (it) => {
             newRefName: branch,
           });
           assert.isFalse(yield* fileSystem.exists(pathService.join(sparsePath, ".gitmodules")));
-          assert.isFalse(yield* fileSystem.exists(pathService.join(sparsePath, "t3.json")));
+          assert.isFalse(yield* fileSystem.exists(pathService.join(sparsePath, "sunbringer.json")));
           return yield* fileSystem.exists(pathService.join(sparsePath, "shared", "SHARED.md"));
         });
 
@@ -8084,7 +8084,7 @@ it.layer(layerTest)("GitVcsDriver core integration", (it) => {
       }),
     );
 
-    it.effect("resolves the submodule mode from the option, then t3.json", () =>
+    it.effect("resolves the submodule mode from the option, then sunbringer.json", () =>
       Effect.gen(function* () {
         const fileSystem = yield* FileSystem.FileSystem;
         const pathService = yield* Path.Path;
@@ -8113,11 +8113,11 @@ it.layer(layerTest)("GitVcsDriver core integration", (it) => {
           branch: string,
           submodules: WorktreeSubmodules | null = null,
         ) {
-          yield* writeTextFile(cwd, "t3.json", `{ "worktreeSubmodules": "${fileMode}" }`);
-          yield* git(cwd, ["add", "t3.json"]);
+          yield* writeTextFile(cwd, "sunbringer.json", `{ "worktreeSubmodules": "${fileMode}" }`);
+          yield* git(cwd, ["add", "sunbringer.json"]);
           yield* git(cwd, ["commit", "--allow-empty", "-m", `submodules: ${fileMode}`]);
           const worktreePath = pathService.join(worktreesDir, branch);
-          const disabled = yield* Ref.make<"settings" | "t3.json" | false>(false);
+          const disabled = yield* Ref.make<"settings" | "sunbringer.json" | false>(false);
           yield* driver.createWorktree(
             { cwd, path: worktreePath, refName: initialBranch, newRefName: branch },
             {
@@ -8155,14 +8155,14 @@ it.layer(layerTest)("GitVcsDriver core integration", (it) => {
           nested: false,
         });
         assert.deepEqual(yield* createWithMode("none", "none"), {
-          disabled: "t3.json",
+          disabled: "sunbringer.json",
           inner: false,
           nested: false,
         });
       }).pipe(withGitFileProtocol),
     );
 
-    it.effect("checks out only the t3.json sparse patterns in a new worktree", () =>
+    it.effect("checks out only the sunbringer.json sparse patterns in a new worktree", () =>
       Effect.gen(function* () {
         const fileSystem = yield* FileSystem.FileSystem;
         const pathService = yield* Path.Path;
@@ -8173,7 +8173,7 @@ it.layer(layerTest)("GitVcsDriver core integration", (it) => {
         yield* writeTextFile(repo, "sparse-patterns.txt", "/*\n!/assets/\n");
         yield* writeTextFile(
           repo,
-          "t3.json",
+          "sunbringer.json",
           `{ "worktreeSparsePatternsPath": "./sparse-patterns.txt" }`,
         );
         yield* git(repo, ["add", "."]);
@@ -8231,40 +8231,42 @@ it.layer(layerTest)("GitVcsDriver core integration", (it) => {
       }),
     );
 
-    it.effect("fails without a worktree when the t3.json sparse pattern path is not a file", () =>
-      Effect.gen(function* () {
-        const fileSystem = yield* FileSystem.FileSystem;
-        const pathService = yield* Path.Path;
-        const cwd = yield* makeTmpDir();
-        const { initialBranch } = yield* initRepoWithCommit(cwd);
-        yield* writeTextFile(cwd, "patterns/keep.txt", "/*\n");
-        const driver = yield* GitVcsDriver.GitVcsDriver;
-        const worktrees = yield* makeTmpDir("git-worktrees-");
-        for (const patternsPath of ["missing.txt", "patterns"]) {
-          yield* writeTextFile(
-            cwd,
-            "t3.json",
-            JSON.stringify({ worktreeSparsePatternsPath: patternsPath }),
-          );
-          yield* git(cwd, ["add", "."]);
-          yield* git(cwd, ["commit", "-m", "missing sparse patterns"]);
-          const worktreePath = pathService.join(worktrees, patternsPath);
-
-          const error = yield* Effect.flip(
-            driver.createWorktree({
+    it.effect(
+      "fails without a worktree when the sunbringer.json sparse pattern path is not a file",
+      () =>
+        Effect.gen(function* () {
+          const fileSystem = yield* FileSystem.FileSystem;
+          const pathService = yield* Path.Path;
+          const cwd = yield* makeTmpDir();
+          const { initialBranch } = yield* initRepoWithCommit(cwd);
+          yield* writeTextFile(cwd, "patterns/keep.txt", "/*\n");
+          const driver = yield* GitVcsDriver.GitVcsDriver;
+          const worktrees = yield* makeTmpDir("git-worktrees-");
+          for (const patternsPath of ["missing.txt", "patterns"]) {
+            yield* writeTextFile(
               cwd,
-              path: worktreePath,
-              refName: initialBranch,
-              newRefName: `feature/${patternsPath}`,
-            }),
-          );
+              "sunbringer.json",
+              JSON.stringify({ worktreeSparsePatternsPath: patternsPath }),
+            );
+            yield* git(cwd, ["add", "."]);
+            yield* git(cwd, ["commit", "-m", "missing sparse patterns"]);
+            const worktreePath = pathService.join(worktrees, patternsPath);
 
-          assert.include(error.detail, patternsPath);
-          assert.isFalse(yield* fileSystem.exists(worktreePath));
-          assert.notInclude(yield* git(cwd, ["worktree", "list"]), worktreePath);
-          assert.equal(yield* git(cwd, ["branch", "--list", `feature/${patternsPath}`]), "");
-        }
-      }),
+            const error = yield* Effect.flip(
+              driver.createWorktree({
+                cwd,
+                path: worktreePath,
+                refName: initialBranch,
+                newRefName: `feature/${patternsPath}`,
+              }),
+            );
+
+            assert.include(error.detail, patternsPath);
+            assert.isFalse(yield* fileSystem.exists(worktreePath));
+            assert.notInclude(yield* git(cwd, ["worktree", "list"]), worktreePath);
+            assert.equal(yield* git(cwd, ["branch", "--list", `feature/${patternsPath}`]), "");
+          }
+        }),
     );
 
     it.effect("still creates the worktree when the base-ref config stays locked", () =>

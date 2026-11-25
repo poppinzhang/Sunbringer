@@ -177,7 +177,7 @@ effectIt.effect(
             SHELL: "/bin/zsh",
             PATH: "/usr/bin",
             JAVA_HOME: "/custom/jdk",
-            T3CODE_FEATURE_FLAGS: "",
+            SUNBRINGER_FEATURE_FLAGS: "",
           };
 
           for (const env of [missing, explicit]) {
@@ -190,8 +190,8 @@ effectIt.effect(
 
           assert.equal(missing.JAVA_HOME, "/opt/homebrew/opt/openjdk@17");
           assert.equal(explicit.JAVA_HOME, "/custom/jdk");
-          assert.equal(missing.T3CODE_FEATURE_FLAGS, "tanstack_source");
-          assert.equal(explicit.T3CODE_FEATURE_FLAGS, "");
+          assert.equal(missing.SUNBRINGER_FEATURE_FLAGS, "tanstack_source");
+          assert.equal(explicit.SUNBRINGER_FEATURE_FLAGS, "");
         }),
       (probe) => Effect.sync(() => probe.mockRestore()),
     ),

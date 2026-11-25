@@ -91,13 +91,13 @@ it.live(
       expect(result._tag, "an unavailable cleanup shell must fail uninstall").toBe("Failure");
       const [, args, options] = spawned[0]!;
       expect(args.at(-1)).toBe(
-        '""%T3_UNINSTALL_PING%" -n 3 127.0.0.1 >nul & rmdir /s /q "%T3_UNINSTALL_RUNTIME%""',
+        '""%SUNBRINGER_UNINSTALL_PING%" -n 3 127.0.0.1 >nul & rmdir /s /q "%SUNBRINGER_UNINSTALL_RUNTIME%""',
       );
       expect(options).toMatchObject({
         cwd: String.raw`C:\Windows\System32`,
         env: {
-          T3_UNINSTALL_PING: String.raw`C:\Windows\System32\ping.exe`,
-          T3_UNINSTALL_RUNTIME: runtimeDir,
+          SUNBRINGER_UNINSTALL_PING: String.raw`C:\Windows\System32\ping.exe`,
+          SUNBRINGER_UNINSTALL_RUNTIME: runtimeDir,
         },
       });
     }).pipe(Effect.scoped, Effect.provide(Layer.mergeAll(NodeServices.layer, NetService.layer))),
@@ -115,7 +115,7 @@ it.layer(Layer.mergeAll(NodeServices.layer, NetService.layer))("t3 uninstall com
       label: "leaves a service that serves another home by the time it is removed",
       otherFromRead: 2,
       removed: [],
-      output: "Left the background service: it now serves another T3 home.",
+      output: "Left the background service: it now serves another Sunbringer home.",
     },
   ])("$label", (input) =>
     Effect.gen(function* () {
@@ -179,15 +179,15 @@ it.layer(NodeServices.layer)("t3 uninstall launcher", (it) => {
         .makeTempDirectoryScoped({ prefix: "t3-uninstall-" })
         .pipe(Effect.flatMap(fs.realPath));
       const versionsDir = path.join(root, "runtime/versions");
-      const exe = path.join(versionsDir, "1.0.0/t3");
-      const otherExe = path.join(root, "other/runtime/versions/1.0.0/t3");
-      const copy = path.join(root, "copy/t3");
+      const exe = path.join(versionsDir, "1.0.0/sunbringer");
+      const otherExe = path.join(root, "other/runtime/versions/1.0.0/sunbringer");
+      const copy = path.join(root, "copy/sunbringer");
       for (const file of [exe, otherExe, copy]) {
         yield* fs.makeDirectory(path.dirname(file), { recursive: true });
         yield* fs.writeFileString(file, "");
       }
-      const ours = path.join(root, "bin/t3");
-      const theirs = path.join(root, "other/bin/t3");
+      const ours = path.join(root, "bin/sunbringer");
+      const theirs = path.join(root, "other/bin/sunbringer");
       yield* fs.makeDirectory(path.dirname(ours), { recursive: true });
       yield* fs.makeDirectory(path.dirname(theirs), { recursive: true });
       yield* fs.symlink(exe, ours);
@@ -199,7 +199,7 @@ it.layer(NodeServices.layer)("t3 uninstall launcher", (it) => {
       assert.isUndefined(yield* findOwnedLauncher({ launchedAs: undefined, versionsDir }));
       // A script launcher execs by absolute path, so argv0 names the executable.
       const scriptDir = path.join(root, "script-bin");
-      const script = path.join(scriptDir, "t3");
+      const script = path.join(scriptDir, "sunbringer");
       yield* fs.makeDirectory(scriptDir);
       yield* fs.writeFileString(script, posixLauncherScript(exe), { mode: 0o755 });
       assert.equal(
@@ -208,12 +208,12 @@ it.layer(NodeServices.layer)("t3 uninstall launcher", (it) => {
         ),
         script,
       );
-      const editedScript = path.join(scriptDir, "t3-edited");
+      const editedScript = path.join(scriptDir, "sunbringer-edited");
       yield* fs.writeFileString(editedScript, `${posixLauncherScript(exe)}# mine\n`);
 
       // On Windows, only the shim exactly as written is ours; a user's wrapper stays.
       const shimDir = path.join(root, "win-bin");
-      const shim = path.join(shimDir, "t3.cmd");
+      const shim = path.join(shimDir, "sunbringer.cmd");
       yield* fs.makeDirectory(shimDir);
       const windowsOwner = (contents: string) =>
         fs
@@ -228,25 +228,25 @@ it.layer(NodeServices.layer)("t3 uninstall launcher", (it) => {
 
       // npx can run another version than the installed one, so uninstall also reads the
       // recorded launchers: through a symlinked home, and dangling after a prune.
-      const throughAlias = path.join(root, "bin/t3-alias");
-      const pruned = path.join(root, "bin/t3-pruned");
-      const scriptThroughAlias = path.join(scriptDir, "t3-alias");
-      const prunedScript = path.join(scriptDir, "t3-pruned");
+      const throughAlias = path.join(root, "bin/sunbringer-alias");
+      const pruned = path.join(root, "bin/sunbringer-pruned");
+      const scriptThroughAlias = path.join(scriptDir, "sunbringer-alias");
+      const prunedScript = path.join(scriptDir, "sunbringer-pruned");
       yield* fs.symlink(root, path.join(root, "alias"));
-      yield* fs.symlink(path.join(root, "alias/runtime/versions/1.0.0/t3"), throughAlias);
-      yield* fs.symlink(path.join(versionsDir, "0.9.0/t3"), pruned);
+      yield* fs.symlink(path.join(root, "alias/runtime/versions/1.0.0/sunbringer"), throughAlias);
+      yield* fs.symlink(path.join(versionsDir, "0.9.0/sunbringer"), pruned);
       yield* fs.writeFileString(
         scriptThroughAlias,
-        posixLauncherScript(path.join(root, "alias/runtime/versions/1.0.0/t3")),
+        posixLauncherScript(path.join(root, "alias/runtime/versions/1.0.0/sunbringer")),
         { mode: 0o755 },
       );
       yield* fs.writeFileString(
         prunedScript,
-        posixLauncherScript(path.join(versionsDir, "0.9.0/t3")),
+        posixLauncherScript(path.join(versionsDir, "0.9.0/sunbringer")),
         { mode: 0o755 },
       );
       // Another program inside a version is not a launcher.
-      const sibling = path.join(root, "bin/t3-sibling");
+      const sibling = path.join(root, "bin/sunbringer-sibling");
       yield* fs.symlink(path.join(versionsDir, "1.0.0/node"), sibling);
       yield* fs.writeFileString(
         path.join(root, "runtime/launchers"),
@@ -275,11 +275,14 @@ it.layer(NodeServices.layer)("t3 uninstall launcher", (it) => {
         ]);
       }
 
-      // On Windows only an unedited t3.cmd is ours; a hand-edited wrapper belongs to the user.
-      const cmd = path.join(root, "bin/t3.cmd");
+      // On Windows only an unedited sunbringer.cmd is ours; a hand-edited wrapper belongs to the user.
+      const cmd = path.join(root, "bin/sunbringer.cmd");
       const edited = path.join(root, "bin/edited.cmd");
       yield* fs.writeFileString(cmd, `@echo off\r\n"${exe}" %*`);
-      yield* fs.writeFileString(edited, `@echo off\r\nset "T3CODE_HOME=D:\\other"\r\n"${exe}" %*`);
+      yield* fs.writeFileString(
+        edited,
+        `@echo off\r\nset "SUNBRINGER_HOME=D:\\other"\r\n"${exe}" %*`,
+      );
       yield* fs.writeFileString(path.join(root, "runtime/launchers"), `${cmd}\r\n${edited}\r\n`);
       assert.deepStrictEqual(
         yield* findRecordedLaunchers(versionsDir).pipe(

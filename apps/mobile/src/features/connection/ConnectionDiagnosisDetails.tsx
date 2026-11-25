@@ -4,8 +4,6 @@ import {
   AVAILABLE_CONNECTION_STATE,
   type ConnectionDiagnosis,
   connectionDiagnosisText,
-  connectionRoutes,
-  hasRelayRoute,
   presentConnectionDiagnosis,
   type EnvironmentPresentation,
 } from "@t3tools/client-runtime/connection";
@@ -13,7 +11,6 @@ import type { EnvironmentId } from "@t3tools/contracts";
 import Constants from "expo-constants";
 import { AsyncResult } from "effect/reactivity";
 import { View } from "react-native";
-import { tryOpenExternalUrl } from "../../lib/openExternalUrl";
 
 import { AppText as Text } from "../../components/ui/AppText";
 import { Button } from "../../components/ui/Button";
@@ -36,13 +33,10 @@ export function useConnectionDiagnosis(
   if (presentation === null || !presentation.entry.enabled) return { diagnosis: null, state };
   const phase = presentation.connection.phase;
   if (phase === "connected" || phase === "unsupported") return { diagnosis: null, state };
-  const relayOnly =
-    connectionRoutes(presentation.entry).length === 1 && hasRelayRoute(presentation.entry);
   const diagnosis = presentConnectionDiagnosis(
     {
       hostLabel: presentation.entry.target.label,
       state,
-      via: relayOnly ? "relay" : "direct",
       clientVersion: Constants.expoConfig?.version,
       serverVersion: presentation.serverConfig?.environment.serverVersion,
     },
@@ -57,7 +51,6 @@ export function ConnectionDiagnosisDetails(props: {
 }) {
   const gt = useGT();
   const { diagnosis } = props;
-  const { moreInfoUrl } = diagnosis;
   return (
     <View className="gap-3">
       <View className="gap-0.5">
@@ -99,14 +92,6 @@ export function ConnectionDiagnosisDetails(props: {
           });
         }}
       />
-      {moreInfoUrl ? (
-        <Button
-          label={gt("More info")}
-          icon="safari"
-          tone="secondary"
-          onPress={() => void tryOpenExternalUrl(moreInfoUrl)}
-        />
-      ) : null}
     </View>
   );
 }

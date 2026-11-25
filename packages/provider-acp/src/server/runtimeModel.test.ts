@@ -1445,7 +1445,7 @@ describe("extractMcpToolCallIdentity", () => {
       toolCallId: "call_JdxnvzjHHrbvyASTLVekLYWV|fc_08f5a805a7159aa6016a7ec4afad548191",
       kind: "execute",
       title:
-        '"$T3_ACP_MCP_NODE" "$T3_ACP_MCP_ENTRYPOINT" acp-mcp-call orchestrator_capabilities \'{}\'',
+        '"$SUNBRINGER_ACP_MCP_NODE" "$SUNBRINGER_ACP_MCP_ENTRYPOINT" acp-mcp-call orchestrator_capabilities \'{}\'',
       status: "in_progress",
       rawInput: null,
       content: [
@@ -1545,7 +1545,7 @@ describe("extractMcpToolCallIdentity", () => {
   });
 
   it("recovers T3 identity from Kiro's @-scoped titles", () => {
-    for (const tool of ["html_render", "t3_thread_read", "delegate_task"]) {
+    for (const tool of ["html_render", "sunbringer_thread_read", "delegate_task"]) {
       const toolCall = toolCallFromUpdate({
         sessionUpdate: "tool_call",
         toolCallId: "kiro-1",
@@ -1660,12 +1660,16 @@ describe("extractMcpToolCallIdentity", () => {
       kind: "other",
       title: "unrelated display title",
       status: "pending",
-      _meta: { toolName: "mcp::t3-code::t3_thread_send", serverId: "t3-code", provenance: "mcp" },
+      _meta: {
+        toolName: "mcp::t3-code::sunbringer_thread_send",
+        serverId: "t3-code",
+        provenance: "mcp",
+      },
     });
 
     expect(extractMcpToolCallIdentity(toolCall)).toEqual({
       server: "t3-code",
-      tool: "t3_thread_send",
+      tool: "sunbringer_thread_send",
     });
   });
 

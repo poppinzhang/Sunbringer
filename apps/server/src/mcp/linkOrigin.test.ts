@@ -223,7 +223,7 @@ const clientScope = (
   environmentId: EnvironmentId.make("environment:box"),
   requestNamespace: `client:${sessionId}`,
   thread: undefined,
-  client: { sessionId, label: `T3 Code · ${sessionId}`, access, linked },
+  client: { sessionId, label: `Sunbringer · ${sessionId}`, access, linked },
   capabilities: new Set(["orchestration", "worktree", "pull-requests"]),
   issuedAt: 0,
 });
@@ -255,7 +255,7 @@ const launch = (
   title: string,
   extra: Record<string, unknown> = {},
 ) =>
-  call(scope, "t3_thread_launch", {
+  call(scope, "sunbringer_thread_launch", {
     projectId,
     title,
     modelSelection: { instanceId, model: "gpt-5" },
@@ -296,7 +296,7 @@ it.layer(Layer.provideMerge(layerTools, layerOrchestration))("work a link starts
       const shell = yield* projections.getThreadShell(launched);
       assert.deepEqual(shell?.linkOrigin, {
         sessionId: "laptop",
-        label: "T3 Code · laptop",
+        label: "Sunbringer · laptop",
         access: "auto",
       });
 
@@ -358,7 +358,7 @@ it.layer(Layer.provideMerge(layerTools, layerOrchestration))("work a link starts
       const users = yield* usersOwnThread;
       const ownLaunch = yield* launch(laptop, "The laptop's");
       const rename = (scope: McpInvocationContext.McpInvocationScope, threadId: ThreadId) =>
-        call(scope, "t3_thread_update", {
+        call(scope, "sunbringer_thread_update", {
           threadId,
           action: "rename",
           title: `Renamed by ${scope.client!.sessionId}`,
@@ -375,8 +375,8 @@ it.layer(Layer.provideMerge(layerTools, layerOrchestration))("work a link starts
       assert.equal((yield* rename(claudeCode, users)).isError, false);
       // Naming this environment's own id is still this environment's thread.
       for (const [name, args] of [
-        ["t3_thread_send", { message: "From the laptop." }],
-        ["t3_thread_interrupt", {}],
+        ["sunbringer_thread_send", { message: "From the laptop." }],
+        ["sunbringer_thread_interrupt", {}],
       ] as const) {
         const result = yield* call(laptop, name, {
           ...args,
@@ -393,7 +393,7 @@ it.layer(Layer.provideMerge(layerTools, layerOrchestration))("work a link starts
       );
 
       // Reads are not fenced.
-      const read = yield* call(laptop, "t3_thread_read", { threadId: users });
+      const read = yield* call(laptop, "sunbringer_thread_read", { threadId: users });
       assert.equal(read.isError, false);
     }),
   );
@@ -405,19 +405,19 @@ it.layer(Layer.provideMerge(layerTools, layerOrchestration))("work a link starts
       const launched = yield* launch(trusted, "Started from the desk");
       assert.deepEqual((yield* projections.getThreadShell(launched))?.linkOrigin, {
         sessionId: "trusted",
-        label: "T3 Code · trusted",
+        label: "Sunbringer · trusted",
         access: "full-access",
       });
 
-      const renamed = yield* call(trusted, "t3_thread_update", {
+      const renamed = yield* call(trusted, "sunbringer_thread_update", {
         threadId: users,
         action: "rename",
         title: "Renamed from the desk",
       });
       assert.equal(renamed.isError, false, JSON.stringify(renamed.content));
       for (const [name, args] of [
-        ["t3_project_update", { projectId, title: "The desk's now" }],
-        ["t3_project_create", { title: "t3code", workspaceRoot: "/p/t3code" }],
+        ["sunbringer_project_update", { projectId, title: "The desk's now" }],
+        ["sunbringer_project_create", { title: "t3code", workspaceRoot: "/p/t3code" }],
       ] as const) {
         const changed = yield* call(trusted, name, args);
         assert.equal(changed.isError, false, `${name}: ${JSON.stringify(changed.content)}`);

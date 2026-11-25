@@ -130,7 +130,7 @@ export class ServerUpdateResumeTimeoutError extends Schema.TaggedError<ServerUpd
   get i18nMessage(): MarkedText {
     return [
       msg(
-        "Could not confirm that the server resumed on t3@{version}. Reconnect to check the update outcome.",
+        "Could not confirm that the server resumed on sunbringer@{version}. Reconnect to check the update outcome.",
         { version: this.targetVersion },
       ),
     ];
@@ -149,7 +149,7 @@ export class ServerUpdateProgressIncompleteError extends Schema.TaggedError<Serv
 
   get i18nMessage(): MarkedText {
     return [
-      msg("The t3@{version} update ended before the server accepted the restart.", {
+      msg("The sunbringer@{version} update ended before the server accepted the restart.", {
         version: this.targetVersion,
       }),
     ];
@@ -184,11 +184,11 @@ export class ServerUpdateTerminalError extends Schema.TaggedError<ServerUpdateTe
     const version = this.targetVersion;
     switch (this.status) {
       case "committed":
-        return [msg("The t3@{version} update committed.", { version })];
+        return [msg("The sunbringer@{version} update committed.", { version })];
       case "rolled-back":
-        return [msg("The t3@{version} update rolled-back.", { version })];
+        return [msg("The sunbringer@{version} update rolled-back.", { version })];
       case "failed":
-        return [msg("The t3@{version} update failed.", { version })];
+        return [msg("The sunbringer@{version} update failed.", { version })];
     }
   }
 }
@@ -2004,24 +2004,11 @@ export function createServerEnvironmentAtoms<R, E>(
       scheduler: workflowDefinitionScheduler,
       concurrency: workflowDefinitionConcurrency,
     }),
-    createGuestShare: createEnvironmentRpcCommand(runtime, {
-      label: "environment-data:server:guest-share:create",
-      tag: WS_METHODS.guestShareCreate,
-    }),
     // Off the config lane: answering a card must not queue behind settings
     // edits. One answer per card at a time.
     answerSecretRequest: createEnvironmentRpcCommand(runtime, {
       label: "environment-data:server:secrets:answer-request",
       tag: WS_METHODS.secretsAnswerRequest,
-      concurrency: {
-        mode: "singleFlight",
-        key: ({ environmentId, input }) =>
-          JSON.stringify([environmentId, input.threadId, input.turnItemId]),
-      },
-    }),
-    answerFeedbackRequest: createEnvironmentRpcCommand(runtime, {
-      label: "environment-data:server:agent-feedback:answer-request",
-      tag: WS_METHODS.agentFeedbackAnswerRequest,
       concurrency: {
         mode: "singleFlight",
         key: ({ environmentId, input }) =>

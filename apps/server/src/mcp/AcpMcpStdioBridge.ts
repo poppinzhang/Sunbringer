@@ -124,7 +124,7 @@ export const mcpToolSession = (
     if (!response.ok) {
       yield* discardResponseBody(response);
       return yield* new AcpMcpBridgeError({
-        message: `T3 Code MCP endpoint responded with HTTP ${response.status}.`,
+        message: `Sunbringer MCP endpoint responded with HTTP ${response.status}.`,
       });
     }
     const payloads: Array<unknown> = [];
@@ -150,7 +150,7 @@ export const mcpToolSession = (
     if (envelope === null || envelope.error !== undefined) {
       const rpcError = Option.getOrUndefined(decodeRpcError(envelope?.error));
       return yield* new AcpMcpBridgeError({
-        message: `T3 Code MCP ${method} failed${envelope?.error === undefined ? "." : `: ${JSON.stringify(envelope.error)}`}`,
+        message: `Sunbringer MCP ${method} failed${envelope?.error === undefined ? "." : `: ${JSON.stringify(envelope.error)}`}`,
         ...(rpcError === undefined ? {} : { rpcError }),
       });
     }
@@ -260,7 +260,7 @@ export function runAcpMcpStdioBridge(options: AcpMcpStdioBridgeOptions): Effect.
           if (envelope.id !== undefined) {
             yield* respondWithError(
               envelope.id,
-              `T3 Code MCP endpoint responded with HTTP ${response.status}.`,
+              `Sunbringer MCP endpoint responded with HTTP ${response.status}.`,
             );
           }
           return yield* discardResponseBody(response);
@@ -274,7 +274,7 @@ export function runAcpMcpStdioBridge(options: AcpMcpStdioBridgeOptions): Effect.
             const error = Cause.squash(cause);
             return respondWithError(
               envelope.id,
-              `T3 Code MCP bridge request failed: ${error instanceof Error ? error.message : String(error)}`,
+              `Sunbringer MCP bridge request failed: ${error instanceof Error ? error.message : String(error)}`,
             );
           }),
         ),
@@ -366,10 +366,12 @@ export async function runAcpMcpCliFastPath(
   command: "acp-mcp-bridge" | "acp-mcp-call",
   args: ReadonlyArray<string>,
 ): Promise<void> {
-  const endpoint = process.env.T3_ACP_MCP_ENDPOINT;
-  const authorization = process.env.T3_ACP_MCP_AUTHORIZATION;
+  const endpoint = process.env.SUNBRINGER_ACP_MCP_ENDPOINT;
+  const authorization = process.env.SUNBRINGER_ACP_MCP_AUTHORIZATION;
   if (endpoint === undefined || authorization === undefined) {
-    process.stderr.write(`${command} requires T3_ACP_MCP_ENDPOINT and T3_ACP_MCP_AUTHORIZATION.\n`);
+    process.stderr.write(
+      `${command} requires SUNBRINGER_ACP_MCP_ENDPOINT and SUNBRINGER_ACP_MCP_AUTHORIZATION.\n`,
+    );
     process.exitCode = 2;
     return;
   }

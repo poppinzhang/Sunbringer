@@ -1,7 +1,7 @@
 import * as NodeModule from "node:module";
 
 import { assert, describe, it } from "@effect/vitest";
-import { DESKTOP_UPDATE_RESTART_MARKER_FILE, DesktopUpdateStateSchema } from "@t3tools/contracts";
+import { DesktopUpdateStateSchema } from "@t3tools/contracts";
 import { computeReleaseNotes } from "electron-updater/out/providers/GitHubProvider.js";
 import * as Cause from "effect/Cause";
 import * as Deferred from "effect/Deferred";
@@ -20,7 +20,6 @@ import * as TestClock from "effect/testing/TestClock";
 import * as ElectronUpdater from "../electron/ElectronUpdater.ts";
 import * as DesktopBackendPool from "../backend/DesktopBackendPool.ts";
 import * as DesktopAppSettings from "../settings/DesktopAppSettings.ts";
-import * as DesktopEnvironment from "../app/DesktopEnvironment.ts";
 import * as DesktopState from "../app/DesktopState.ts";
 import * as DesktopUpdatePolicy from "./DesktopUpdatePolicy.ts";
 import * as DesktopUpdates from "./DesktopUpdates.ts";
@@ -117,8 +116,8 @@ describe("DesktopUpdates", () => {
   );
 
   it.effect("keeps the disabled reason available after configuration and channel changes", () => {
-    const harness = makeHarness({ env: { T3CODE_DISABLE_AUTO_UPDATE: "true" } });
-    const reason = "Automatic updates are disabled by the T3CODE_DISABLE_AUTO_UPDATE setting.";
+    const harness = makeHarness({ env: { SUNBRINGER_DISABLE_AUTO_UPDATE: "true" } });
+    const reason = "Automatic updates are disabled by the SUNBRINGER_DISABLE_AUTO_UPDATE setting.";
 
     return Effect.scoped(
       Effect.gen(function* () {
@@ -749,12 +748,10 @@ describe("DesktopUpdates", () => {
     ).pipe(Effect.provide(Layer.merge(TestClock.layer(), harness.layer)));
   });
 
-  it.effect("marks the backend stop for an install as an update restart", () => {
-    let markersAtStop: ReadonlyArray<string> = [];
+  it.effect("records the update in progress before stopping the backend for an install", () => {
     let inProgressAtStop: string | undefined;
     const harness = makeHarness({
       stopBackend: Effect.sync(() => {
-        markersAtStop = [...harness.updateRestartMarkers];
         inProgressAtStop = harness.updateInProgressMarker();
       }),
     });
@@ -762,16 +759,12 @@ describe("DesktopUpdates", () => {
     return Effect.scoped(
       Effect.gen(function* () {
         yield* TestClock.setTime(1_000);
-        const environment = yield* DesktopEnvironment.DesktopEnvironment;
         const updates = yield* DesktopUpdates.DesktopUpdates;
         yield* updates.configure;
         harness.emit("update-downloaded", { version: "1.2.4" });
         yield* flushCallbacks;
 
         assert.isTrue((yield* updates.install).accepted);
-        assert.deepEqual(markersAtStop, [
-          environment.path.join(environment.baseDir, "runtime", DESKTOP_UPDATE_RESTART_MARKER_FILE),
-        ]);
         // SSH launchers wait on this until the replacement backend publishes its runtime.
         assert.deepEqual(JSON.parse(inProgressAtStop ?? "null"), {
           startedAt: 1_000,
@@ -843,7 +836,7 @@ describe("DesktopUpdates", () => {
     ).pipe(Effect.provide(Layer.merge(TestClock.layer(), harness.layer)));
   });
 
-  it.effect("drops the update restart marker when an install is interrupted", () =>
+  it.effect("drops the update-in-progress marker when an install is interrupted", () =>
     Effect.gen(function* () {
       const stopping = yield* Deferred.make<void>();
       const harness = makeHarness({
@@ -859,11 +852,9 @@ describe("DesktopUpdates", () => {
 
           const installFiber = yield* updates.install.pipe(Effect.forkScoped);
           yield* Deferred.await(stopping);
-          assert.equal(harness.updateRestartMarkers.size, 1);
           assert.isDefined(harness.updateInProgressMarker());
 
           yield* Fiber.interrupt(installFiber);
-          assert.equal(harness.updateRestartMarkers.size, 0);
           assert.isUndefined(harness.updateInProgressMarker());
         }),
       ).pipe(Effect.provide(Layer.merge(TestClock.layer(), harness.layer)));
@@ -898,7 +889,6 @@ describe("DesktopUpdates", () => {
           "quitAndInstall",
           "startBackend",
         ]);
-        assert.equal(harness.updateRestartMarkers.size, 0);
         assert.isUndefined(harness.updateInProgressMarker());
         assert.equal(harness.installRecords.size, 0);
       }),
@@ -1404,7 +1394,7 @@ describe("describeUpdateErrorCause", () => {
 });
 
 describe("DesktopUpdates under a managed policy", () => {
-  const message = "Example Corp manages T3 Code updates.";
+  const message = "Example Corp manages Sunbringer updates.";
   const managed = (
     policy: Partial<DesktopUpdatePolicy.UpdatePolicy>,
   ): DesktopUpdatePolicy.UpdatePolicy => ({
@@ -1436,7 +1426,7 @@ describe("DesktopUpdates under a managed policy", () => {
   it.effect("updates from the administrator's feed", () => {
     const harness = makeHarness({
       // Any user can set the mock flag; it must not redirect a managed feed.
-      env: { T3CODE_DESKTOP_MOCK_UPDATES: "true" },
+      env: { SUNBRINGER_DESKTOP_MOCK_UPDATES: "true" },
       policy: managed({ feedUrl: "https://updates.example.com/t3code" }),
     });
 
@@ -1491,7 +1481,7 @@ describe("DesktopUpdates under a managed policy", () => {
   it.effect("does not report the channel as the only block when updates are off anyway", () => {
     const harness = makeHarness({
       appVersion: "1.2.3-nightly.20261028.1",
-      env: { T3CODE_DISABLE_AUTO_UPDATE: "true" },
+      env: { SUNBRINGER_DISABLE_AUTO_UPDATE: "true" },
       policy: managed({ allowNightly: false, feedUrl: "https://updates.example.com/t3code" }),
     });
 

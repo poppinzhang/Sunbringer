@@ -16,7 +16,6 @@ const machine = (name: string, overrides: Partial<LinkableMachine> = {}): Linkab
   label: name,
   machine: "server",
   connected: true,
-  connectOnly: false,
   linked: false,
   urls: [`https://${name}.example.ts.net`, `http://100.64.0.1:3773`],
   ...overrides,
@@ -29,7 +28,6 @@ describe("linkBatchCandidates", () => {
       machine("ready"),
       machine("linked", { linked: true, connected: false }),
       machine("offline", { connected: false }),
-      machine("connect", { connected: false, connectOnly: true }),
       machine("viewer"),
       machine("loopback", { urls: [] }),
     ];
@@ -43,7 +41,6 @@ describe("linkBatchCandidates", () => {
       ["ready", null],
       ["linked", "linked"],
       ["offline", "not_connected"],
-      ["connect", "not_connected"],
       ["viewer", "no_access"],
       ["loopback", "no_address"],
     ]);

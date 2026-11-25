@@ -274,7 +274,7 @@ const scanFolders = Effect.fn("WorkspaceFolders.scan")(function* (
 
 /**
  * The repositories inside a project folder, read from disk: the ones a scan finds there, less
- * those the project's `t3.json` leaves out. A folder outside it is never found this way, since
+ * those the project's `sunbringer.json` leaves out. A folder outside it is never found this way, since
  * tracking one grants agents a place they could not reach before.
  */
 export const discoverFolders = Effect.fn("WorkspaceFolders.discover")(function* (

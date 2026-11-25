@@ -1,6 +1,6 @@
 ---
 name: launch-video
-description: Make a short launch video (1920x1080 MP4 plus an outro PNG) that demos a T3 Code feature, built from the real app with added motion, for an X/Twitter announcement or release thread. Use when asked for a launch video, demo video, feature teaser or announcement clip, or to add a video to a release tweet.
+description: Make a short launch video (1920x1080 MP4 plus an outro PNG) that demos a Sunbringer feature, built from the real app with added motion, for an X/Twitter announcement or release thread. Use when asked for a launch video, demo video, feature teaser or announcement clip, or to add a video to a release tweet.
 ---
 
 # Launch videos
@@ -45,7 +45,7 @@ There are two ways to build one:
      (to push a branch or open a pull request with a forge CLI); `as: "name"` keeps its output,
      or the `pick` regex match in it, as `<var:name>` for the turn's later steps. A workflow
      `agent` step with `returns` finishes on `submit: { ... }`, which hands it that value
-     through `t3_submit_output`. `fake-claude.log` in the home records the protocol, for debugging.
+     through `sunbringer_submit_output`. `fake-claude.log` in the home records the protocol, for debugging.
    - Titles, commit messages and branch names come from `claude -p --json-schema`: answer them
      with `{ match, json }` turns, where `match` is tested against the schema plus the prompt
      (`'"title"'`, `'"subject"[\\s\\S]*products\\.ts'`). Unanswered ones fail in the app.
@@ -89,7 +89,7 @@ harness's task stop; it ends its servers' process groups.
 
 ### Staging traps
 
-- **Machine names and icons.** `T3CODE_ENVIRONMENT_LABEL` and `T3CODE_ENVIRONMENT_MACHINE_KIND`
+- **Machine names and icons.** `SUNBRINGER_ENVIRONMENT_LABEL` and `SUNBRINGER_ENVIRONMENT_MACHINE_KIND`
   (laptop, desktop, cloud, linux, mac-mini, mac-studio) override what the server detects.
   `prepareHome({ label, machine })` records them and `startEnvironment` and `cli()` pass them
   on; the CLI needs them too, because a link introduces the machine by its label.
@@ -182,8 +182,8 @@ seeks every animation (in the story and inside each beat) to each frame's time.
   throws if two overlap; two captions crossfading read as garbled text.
 - **Pacing**: `Kit.timeline([[realSeconds, animFrom, animTo], ...])` maps video time to
   animation time; `animFrom == animTo` holds a frame. It also sets the video length.
-- **Outro** `.outro`: logo, a two-line headline, "Available now in **T3 Code** `<version>`",
-  `t3.codes`. Change the headline and version, keep the rest. Hold it about 3 s.
+- **Outro** `.outro`: logo, a two-line headline, "Available now in **Sunbringer** `<version>`",
+  `github.com/poppinzhang/Sunbringer`. Change the headline and version, keep the rest. Hold it about 3 s.
 
 Two animations on one property of one element fight (the later one wins for its whole
 fill). Give an element one animation per property, as `Kit.beats` does for visibility.

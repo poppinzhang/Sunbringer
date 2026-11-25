@@ -1,8 +1,7 @@
 # Security policy
 
-Report security vulnerabilities affecting T3 Code or T3 Tools-operated infrastructure to
-[security@t3.codes](mailto:security@t3.codes). Please do not disclose them publicly until we have had
+Report security vulnerabilities affecting Sunbringer privately via
+[GitHub Security Advisories](https://github.com/poppinzhang/Sunbringer/security/advisories/new). Please do not disclose them publicly until we have had
 a reasonable opportunity to investigate and remediate them.
 
-See the [full security policy](https://t3.codes/security-policy) for reporting details, scope,
-and safe harbor terms for good-faith research.
+See [SECURITY.md](../SECURITY.md) for scope and security boundary details.

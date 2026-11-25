@@ -41,9 +41,7 @@ import {
   ThreadModelSwitchDivider,
 } from "./thread-handoff-row";
 import { GuestBubbleTint, GuestMessageName } from "./guestMessageStyle";
-import { ThreadGuestPendingMessage, useThreadGuestShare } from "./ThreadGuestShareBar";
 import { LinkRequestCard } from "./LinkRequestCard";
-import { FeedbackRequestCard } from "./FeedbackRequestCard";
 import { SecretRequestCard } from "./SecretRequestCard";
 import { AppActivityIndicator } from "../../components/ui/AppActivityIndicator";
 import {
@@ -264,7 +262,6 @@ import {
   WORK_GROUP_TOGGLE_HEIGHT,
 } from "./thread-work-log";
 import {
-  appendGuestPendingMessages,
   appendPendingThreadMessages,
   createPendingTurnAppender,
   createThreadFeedGrouping,
@@ -2019,25 +2016,6 @@ function renderFeedEntry(
   const entry = info.item;
   const { markdownStyles, iconSubtleColor, userBubbleColor, m } = props;
 
-  if (entry.type === "guest-pending") {
-    return (
-      <ThreadGuestPendingMessage
-        threadRef={scopeThreadRef(props.environmentId, props.threadId)}
-        guestName={entry.guestName}
-        message={entry.message}
-        bubbleMaxWidth={props.duoColumns ? "85%" : props.userBubbleMaxWidth}
-        renderAttachments={(attachments) => (
-          <MessageAttachmentList
-            attachments={attachments}
-            environmentId={props.environmentId}
-            onPressPreview={props.onPressPreview}
-            onPlaybackStart={props.onPlaybackStart}
-          />
-        )}
-      />
-    );
-  }
-
   if (entry.type === "pending-fold") {
     return (
       <View className="mb-1 flex-row items-center border-b border-border-subtle px-2">
@@ -2203,15 +2181,8 @@ function renderFeedEntry(
     );
   }
 
-  if (entry.type === "activity-group" && isFeedbackRequestActivityGroup(entry)) {
-    return (
-      <FeedbackRequestCard
-        environmentId={props.environmentId}
-        projectedItem={entry.activities[0]!.projectedItem}
-        iconColor={iconSubtleColor}
-      />
-    );
-  }
+  // Feedback cards exist only in threads from builds whose agents filed reports.
+  if (entry.type === "activity-group" && isFeedbackRequestActivityGroup(entry)) return null;
 
   if (entry.type === "activity-group" && isLinkRequestActivityGroup(entry)) {
     return (
@@ -2387,7 +2358,7 @@ function renderFeedEntry(
         >
           {presentation.attribution === "t3code" ? (
             <Text className="mb-1 pr-1 font-t3-medium text-2xs text-foreground-muted opacity-60">
-              {m(msg("Sent by T3 Code"))}
+              {m(msg("Sent by Sunbringer"))}
             </Text>
           ) : null}
           {presentation.guestName !== undefined ? (
@@ -3090,7 +3061,6 @@ export const ThreadFeed = memo(function ThreadFeed(props: ThreadFeedProps) {
   const formatMessageTime = useMessageTimeFormatter();
   const { listRef, onIsAtEndChange, onHeaderMaterialVisibilityChange } = props;
   const workflowOpening = useWorkflowOpening(props.detailRef);
-  const guestShare = useThreadGuestShare(props.detailRef);
   const deviceType = useDeviceType();
   const duoColumns = useNativeWorkspaceColumnsSupported() && isDuoDevice(deviceType);
   const openPullRequest = useOpenPullRequest();
@@ -3822,13 +3792,9 @@ export const ThreadFeed = memo(function ThreadFeed(props: ThreadFeedProps) {
     setInteractionState((current) => ({ ...current, revealedMessageId: jumpToMessageId }));
   }
   const [appendPendingTurn] = useState(createPendingTurnAppender);
-  const presentedFeed = appendGuestPendingMessages(
-    appendPendingTurn(
-      useThreadFeedPresentation(props, expandedTurnIds, expandedWorkGroups, revealedMessageId),
-      { zen: props.toolCallVisibility === "zen" },
-      m,
-    ),
-    guestShare,
+  const presentedFeed = appendPendingTurn(
+    useThreadFeedPresentation(props, expandedTurnIds, expandedWorkGroups, revealedMessageId),
+    { zen: props.toolCallVisibility === "zen" },
     m,
   );
   const pendingFoldMessageId =
@@ -4113,7 +4079,6 @@ export const ThreadFeed = memo(function ThreadFeed(props: ThreadFeedProps) {
   // estimatedItemSize tall, and scrolling up through unmeasured content
   // corrects each row's height as it mounts — the feed visibly jumps.
   const getFixedItemSize = (entry: ThreadFeedRow) => {
-    if (entry.type === "guest-pending") return undefined;
     if (entry.type === "pending-fold") {
       return workRowSizing.fixedRowHeight === undefined
         ? undefined

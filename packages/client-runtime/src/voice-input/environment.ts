@@ -16,7 +16,7 @@ import type {
 
 import * as RemoteEnvironmentAuthorization from "../authorization/service.ts";
 import type { PreparedConnection } from "../connection/model.ts";
-import * as ManagedRelay from "../relay/managedRelay.ts";
+import * as Dpop from "../dpop/signer.ts";
 import {
   makeEnvironmentHttpApiGroupClient,
   makeEnvironmentHttpApiUrlBuilder,
@@ -49,7 +49,7 @@ const request = Effect.fn("clientRuntime.voiceInput.environmentRequest")(functio
   return yield* executeAuthenticatedEnvironmentHttpRequest({
     group: input.group,
     prepared: input.prepared,
-    signer: yield* Effect.serviceOption(ManagedRelay.ManagedRelayDpopSigner),
+    signer: yield* Effect.serviceOption(Dpop.DpopSigner),
     remoteAuthorization: yield* Effect.serviceOption(
       RemoteEnvironmentAuthorization.RemoteEnvironmentAuthorization,
     ),

@@ -53,7 +53,7 @@ const policies = (): ReadonlyArray<Policy> => [
   {
     id: "Organization",
     title: "Organization",
-    help: 'Required whenever any other T3 Code policy is set: T3 Code will not start with policies that do not name an organization.\n\nUsers see the name as "Managed by <organization>" beside every control the policy locks. The support URL is optional.',
+    help: 'Required whenever any other Sunbringer policy is set: Sunbringer will not start with policies that do not name an organization.\n\nUsers see the name as "Managed by <organization>" beside every control the policy locks. The support URL is optional.',
     elements: [
       { kind: "text", name: "Organization", label: "Organization name" },
       { kind: "text", name: "SupportUrl", label: "Support URL (optional)" },
@@ -76,7 +76,7 @@ const policies = (): ReadonlyArray<Policy> => [
   {
     id: "Clients",
     title: "Allowed clients",
-    help: "What may connect to T3 Code on this machine.\n\nWithout Remote, T3 Code only listens on this machine, does not create pairing links, signs out devices that paired earlier, and turns T3 Connect off. Check at least one client.\n\nDisabled or Not Configured: no restriction.",
+    help: "What may connect to Sunbringer on this machine.\n\nWithout Remote, Sunbringer only listens on this machine, does not create pairing links, and signs out devices that paired earlier. Check at least one client.\n\nDisabled or Not Configured: no restriction.",
     elements: [
       {
         kind: "checkbox",
@@ -96,16 +96,10 @@ const policies = (): ReadonlyArray<Policy> => [
         kind: "checkbox",
         list: "Clients",
         name: "remote",
-        label: "Remote: phones, other computers, app.t3.codes",
+        label: "Remote: phones and other computers",
         defaultChecked: false,
       },
     ],
-  },
-  {
-    id: "Connect",
-    title: "Allow T3 Connect",
-    help: "Disabled turns T3 Connect off and unlinks this machine. Other remote access still follows Allowed clients.\n\nEnabled or Not Configured leaves T3 Connect available.",
-    toggle: "Connect",
   },
   {
     id: "WebhookTasks",
@@ -116,20 +110,14 @@ const policies = (): ReadonlyArray<Policy> => [
   {
     id: "BrowserCookieImport",
     title: "Allow importing browser cookies",
-    help: "Disabled stops users from importing cookies from another browser into T3 Code's browser.",
+    help: "Disabled stops users from importing cookies from another browser into Sunbringer's browser.",
     toggle: "BrowserCookieImport",
   },
   {
     id: "PreviewTunnel",
     title: "Allow the preview tunnel",
-    help: "Disabled stops other devices from opening this machine's local servers through T3 Code: no in-app browser tabs loaded on the device, no Open on this device, no port forwarding. Browser tabs still stream from this machine.",
+    help: "Disabled stops other devices from opening this machine's local servers through Sunbringer: no in-app browser tabs loaded on the device, no Open on this device, no port forwarding. Browser tabs still stream from this machine.",
     toggle: "PreviewTunnel",
-  },
-  {
-    id: "Telemetry",
-    title: "Allow usage data",
-    help: "Disabled stops T3 Code from sending product usage data and relay connection traces. Enabled cannot turn them on for a user who turned them off.",
-    toggle: "Telemetry",
   },
   {
     id: "AllowedDrivers",
@@ -146,7 +134,7 @@ const policies = (): ReadonlyArray<Policy> => [
   {
     id: "Updates",
     title: "Updates",
-    help: "Off stops T3 Code from checking for updates, for machines that receive T3 Code through device management.\n\nA feed URL makes the desktop app update from your own mirror of the release feed instead of GitHub; it must be https. Unchecking nightly makes the nightly channel unavailable.\n\nDisabled or Not Configured: no restriction.",
+    help: "Off stops Sunbringer from checking for updates, for machines that receive Sunbringer through device management.\n\nA feed URL makes the desktop app update from your own mirror of the release feed instead of GitHub; it must be https. Unchecking nightly makes the nightly channel unavailable.\n\nDisabled or Not Configured: no restriction.",
     elements: [
       {
         kind: "enum",
@@ -170,13 +158,13 @@ const policies = (): ReadonlyArray<Policy> => [
   {
     id: "Settings",
     title: "Managed settings (JSON)",
-    help: 'Defaults and locks for server settings, as the "settings" object of a T3 Code policy. Each key is a setting path; each value is {"value": ..., "locked": true|false}.\n\nExample: {"enableAgentBrowserAccess": {"value": false, "locked": true}}\n\nRun "t3 policy check" on a policy file with the same object to validate it first.',
+    help: 'Defaults and locks for server settings, as the "settings" object of a Sunbringer policy. Each key is a setting path; each value is {"value": ..., "locked": true|false}.\n\nExample: {"enableAgentBrowserAccess": {"value": false, "locked": true}}\n\nRun "sunbringer policy check" on a policy file with the same object to validate it first.',
     elements: [{ kind: "text", name: "Settings", label: "Settings JSON", json: true }],
   },
   {
     id: "ProviderInstances",
     title: "Provider settings (JSON)",
-    help: 'Fields set on every instance of a provider, as the "limits.providers.instances" object of a T3 Code policy: environment variables, binaryPath, launchArgs.\n\nExample: {"claudeAgent": {"locked": true, "environment": [{"name": "CLAUDE_CODE_USE_BEDROCK", "value": "1"}]}}\n\nEvery user on the machine can read this value, so do not put credentials in it.',
+    help: 'Fields set on every instance of a provider, as the "limits.providers.instances" object of a Sunbringer policy: environment variables, binaryPath, launchArgs.\n\nExample: {"claudeAgent": {"locked": true, "environment": [{"name": "CLAUDE_CODE_USE_BEDROCK", "value": "1"}]}}\n\nEvery user on the machine can read this value, so do not put credentials in it.',
     elements: [
       { kind: "text", name: "ProviderInstances", label: "Provider settings JSON", json: true },
     ],
@@ -243,7 +231,7 @@ export function windowsAdmx(): string {
   return `<?xml version="1.0" encoding="utf-8"?>
 <policyDefinitions xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" revision="1.0" schemaVersion="1.0" xmlns="http://schemas.microsoft.com/GroupPolicy/2006/07/PolicyDefinitions">
   <policyNamespaces>
-    <target prefix="t3code" namespace="T3Tools.Policies.T3Code" />
+    <target prefix="sunbringer" namespace="Sunbringer.Policies.Sunbringer" />
   </policyNamespaces>
   <resources minRequiredRevision="1.0" />
   <supportedOn>
@@ -276,8 +264,8 @@ const presentationElement = (element: Element) => {
 /** The en-US strings and dialog layouts for `windowsAdmx`. */
 export function windowsAdml(): string {
   const strings: Array<readonly [string, string]> = [
-    ["T3Code", "T3 Code"],
-    ["SUPPORTED_T3Code", "T3 Code with managed policy support"],
+    ["T3Code", "Sunbringer"],
+    ["SUPPORTED_T3Code", "Sunbringer with managed policy support"],
   ];
   const presentations: Array<string> = [];
   for (const policy of policies()) {
@@ -297,8 +285,8 @@ export function windowsAdml(): string {
   }
   return `<?xml version="1.0" encoding="utf-8"?>
 <policyDefinitionResources xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" revision="1.0" schemaVersion="1.0" xmlns="http://schemas.microsoft.com/GroupPolicy/2006/07/PolicyDefinitions">
-  <displayName>T3 Code</displayName>
-  <description>Policies for T3 Code</description>
+  <displayName>Sunbringer</displayName>
+  <description>Policies for Sunbringer</description>
   <resources>
     <stringTable>
 ${strings.map(([id, text]) => `      <string id="${id}">${escapeXml(text)}</string>`).join("\n")}
@@ -343,7 +331,7 @@ const nullPath = (
   return undefined;
 };
 
-/** A device configuration profile that installs `document` for `com.t3tools.t3code`. */
+/** A device configuration profile that installs `document` for `com.sunbringer.app`. */
 export function macosProfile(
   document: ManagedPolicyDocument,
   uuids: { readonly profile: string; readonly payload: string },
@@ -363,17 +351,17 @@ export function macosProfile(
   const profile = {
     PayloadContent: [
       {
-        PayloadDisplayName: "T3 Code policy",
-        PayloadIdentifier: `com.t3tools.t3code.policy.${uuids.payload}`,
-        PayloadType: "com.t3tools.t3code",
+        PayloadDisplayName: "Sunbringer policy",
+        PayloadIdentifier: `com.sunbringer.app.policy.${uuids.payload}`,
+        PayloadType: "com.sunbringer.app",
         PayloadUUID: uuids.payload,
         PayloadVersion: 1,
         ...document,
       },
     ],
-    PayloadDescription: "Configures T3 Code for every user on this Mac.",
-    PayloadDisplayName: `T3 Code policy for ${document.organization}`,
-    PayloadIdentifier: `com.t3tools.t3code.policy`,
+    PayloadDescription: "Configures Sunbringer for every user on this Mac.",
+    PayloadDisplayName: `Sunbringer policy for ${document.organization}`,
+    PayloadIdentifier: `com.sunbringer.app.policy`,
     PayloadOrganization: document.organization,
     PayloadScope: "System",
     PayloadType: "Configuration",

@@ -29,7 +29,7 @@ import * as ThreadManagement from "../orchestration-v2/ThreadManagementService.t
 import * as PeerLinks from "./PeerLinks.ts";
 import * as PeerMcpClient from "./PeerMcpClient.ts";
 
-// Match local waits: return before MCP client timeouts and T3 Connect's ~100 s idle drop.
+// Match local waits: return before MCP client timeouts and a proxy's ~100 s idle drop.
 const DEFAULT_WAIT_TIMEOUT_MS = 30_000;
 const MAX_WAIT_TIMEOUT_MS = 45_000;
 
@@ -46,7 +46,7 @@ export class PeerForwarding extends Context.Service<
   {
     /**
      * Runs `tool` in the linked environment `environmentId` with `params`. A
-     * `t3_thread_wait` goes in pieces short enough to survive any route.
+     * `sunbringer_thread_wait` goes in pieces short enough to survive any route.
      */
     readonly call: <T extends Tool.Any>(
       scope: Scope,
@@ -54,19 +54,19 @@ export class PeerForwarding extends Context.Service<
       environmentId: EnvironmentId,
       params: Tool.Parameters<T>,
     ) => Effect.Effect<Tool.Success<T>, OrchestratorMcpFailure>;
-    /** `t3_thread_read` there. */
+    /** `sunbringer_thread_read` there. */
     readonly readThread: (
       scope: Scope,
       environmentId: EnvironmentId,
       input: OrchestratorMcpThreadReadInput,
     ) => Effect.Effect<OrchestratorMcpThreadReadResult, OrchestratorMcpFailure>;
-    /** `t3_thread_interrupt` there. */
+    /** `sunbringer_thread_interrupt` there. */
     readonly interruptThread: (
       scope: Scope,
       environmentId: EnvironmentId,
       input: OrchestratorMcpThreadInterruptInput,
     ) => Effect.Effect<OrchestratorMcpThreadInterruptResult, OrchestratorMcpFailure>;
-    /** `t3_thread_wait` there, bounded like a local wait. */
+    /** `sunbringer_thread_wait` there, bounded like a local wait. */
     readonly waitForThread: (
       scope: Scope,
       environmentId: EnvironmentId,
@@ -97,7 +97,7 @@ export const remoteTarget = (scope: Scope, environmentId: EnvironmentId | undefi
 
 // Older peers reject beforePosition during parameter validation.
 const BEFORE_POSITION_REFUSAL =
-  /^Invalid parameters for tool 't3_thread_read': Unknown arguments? (?:"[^"]+", )*"beforePosition"(?:, "[^"]+")*\. Accepted arguments: /;
+  /^Invalid parameters for tool 'sunbringer_thread_read': Unknown arguments? (?:"[^"]+", )*"beforePosition"(?:, "[^"]+")*\. Accepted arguments: /;
 export const refusesBeforePosition = (failure: {
   readonly code: string;
   readonly message: string;
@@ -211,7 +211,7 @@ const make = Effect.gen(function* () {
   const readThread: PeerForwarding["Service"]["readThread"] = (scope, environmentId, input) =>
     forward<OrchestratorMcpThreadReadResult>(
       scope,
-      "t3_thread_read",
+      "sunbringer_thread_read",
       OrchestratorMcpThreadReadInput,
       OrchestratorMcpThreadReadResult,
       environmentId,
@@ -225,7 +225,7 @@ const make = Effect.gen(function* () {
   ) =>
     forward<OrchestratorMcpThreadInterruptResult>(
       scope,
-      "t3_thread_interrupt",
+      "sunbringer_thread_interrupt",
       OrchestratorMcpThreadInterruptInput,
       OrchestratorMcpThreadInterruptResult,
       environmentId,
@@ -235,7 +235,7 @@ const make = Effect.gen(function* () {
   const waitForThread: PeerForwarding["Service"]["waitForThread"] = (scope, environmentId, input) =>
     forward<OrchestratorMcpThreadWaitResult>(
       scope,
-      "t3_thread_wait",
+      "sunbringer_thread_wait",
       OrchestratorMcpThreadWaitInput,
       OrchestratorMcpThreadWaitResult,
       environmentId,
@@ -256,7 +256,7 @@ const make = Effect.gen(function* () {
 
   // Older peers page some cursorless reads forward; ask for the newest page, as a read here gets.
   const newestPage = (toolName: string, params: unknown) => {
-    if (toolName !== "t3_thread_read") return undefined;
+    if (toolName !== "sunbringer_thread_read") return undefined;
     const input = params as OrchestratorMcpThreadReadInput;
     return input.afterPosition === undefined && input.beforePosition === undefined
       ? { ...input, beforePosition: Number.MAX_SAFE_INTEGER }
@@ -272,7 +272,7 @@ const make = Effect.gen(function* () {
     const forwarded: Effect.Effect<
       Tool.Success<typeof tool>,
       OrchestratorMcpFailure
-    > = tool.name === "t3_thread_wait"
+    > = tool.name === "sunbringer_thread_wait"
       ? (waitForThread(
           scope,
           environmentId,
@@ -289,7 +289,7 @@ const make = Effect.gen(function* () {
    * empty list reads as a dead end and agents go looking elsewhere.
    */
   const NOT_LISTED =
-    "Not listed: not linked yet. Call t3_environment_link with a hint from the user's words.";
+    "Not listed: not linked yet. Call sunbringer_environment_link with a hint from the user's words.";
 
   const listLinks: PeerForwarding["Service"]["links"] = Effect.fn("PeerForwarding.listLinks")(
     function* (scope) {

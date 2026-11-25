@@ -126,10 +126,10 @@ export function trackSwitchBlockReason(input: {
   if (!crossesReleaseTrack(input.serverVersion, input.targetVersion)) return null;
   const databaseMigration = input.databaseMigration();
   if (input.targetDatabaseMigration === undefined || databaseMigration === undefined) {
-    return `Cannot confirm this database works with t3@${input.targetVersion}. Switch tracks from Settings → About → Update track, which checks it first.`;
+    return `Cannot confirm this database works with sunbringer@${input.targetVersion}. Switch tracks from Settings → About → Update track, which checks it first.`;
   }
   return input.targetDatabaseMigration < databaseMigration
-    ? `This database has changes t3@${input.targetVersion} does not support yet; it stays on this release.`
+    ? `This database has changes sunbringer@${input.targetVersion} does not support yet; it stays on this release.`
     : null;
 }
 
@@ -191,14 +191,14 @@ export const make = Effect.fn("cloud.server_self_update.make")(function* () {
         );
       }
       return yield* failWith(
-        "This server is managed by the T3 Code desktop app on its machine; update the desktop app to update it.",
+        "This server is managed by the Sunbringer desktop app on its machine; update the desktop app to update it.",
       );
     }
     // The target must accept the launcher that will run it, which can be older than this server.
     const launcherProtocol = launcher.protocol;
     if (capability === null || launcherProtocol === undefined) {
       return yield* failWith(
-        "Remote updates require the T3 Code background service. Run `t3 service install` on the server machine.",
+        "Remote updates require the Sunbringer background service. Run `sunbringer service install` on the server machine.",
       );
     }
 
@@ -206,7 +206,7 @@ export const make = Effect.fn("cloud.server_self_update.make")(function* () {
     if (unsafeCrossing !== null) return yield* failWith(unsafeCrossing);
     const targetVersion = input.targetVersion.trim();
     if (!isExactServiceVersion(targetVersion)) {
-      return yield* failWith(`'${targetVersion}' is not an exact t3 version.`);
+      return yield* failWith(`'${targetVersion}' is not an exact sunbringer version.`);
     }
     if (yield* Ref.getAndSet(inFlight, true)) {
       return yield* failWith("A server update is already in progress.");
@@ -240,7 +240,7 @@ export const make = Effect.fn("cloud.server_self_update.make")(function* () {
           }
           if (mirror !== undefined && isUnpublishedRelease(error)) {
             return failWith(
-              `${mirror.organization}'s update mirror has no t3@${targetVersion} for this machine.`,
+              `${mirror.organization}'s update mirror has no sunbringer@${targetVersion} for this machine.`,
               error,
             );
           }
@@ -251,7 +251,7 @@ export const make = Effect.fn("cloud.server_self_update.make")(function* () {
             .filter((part) => part !== undefined)
             .join(" ");
           return failWith(
-            `Could not prepare t3@${targetVersion} while ${error.step}${downloadFailure ? ` (${downloadFailure})` : ""}.`,
+            `Could not prepare sunbringer@${targetVersion} while ${error.step}${downloadFailure ? ` (${downloadFailure})` : ""}.`,
             error,
           );
         }),

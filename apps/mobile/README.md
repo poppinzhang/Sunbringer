@@ -1,4 +1,4 @@
-# T3 Code Mobile
+# Sunbringer Mobile
 
 > [!NOTE]
 > To install the released app from the App Store or Google Play, see [Mobile app](../../docs/user/install.md#mobile-app). This guide covers building it from source.
@@ -10,14 +10,14 @@
 
 This app has three variants:
 
-- `development`: Expo dev client, installable side-by-side as `T3 Code Dev`
-- `preview`: persistent internal preview build, installable side-by-side as `T3 Code Preview`
-- `production`: store/release build as `T3 Code`
+- `development`: Expo dev client, installable side-by-side as `Sunbringer Dev`
+- `preview`: persistent internal preview build, installable side-by-side as `Sunbringer Preview`
+- `production`: store/release build as `Sunbringer`
 
 Run commands from `apps/mobile`.
 
-T3 Connect is optional and disabled in a fresh clone. Public configuration belongs in the
-repository-root `.env` or `.env.local`, not an `apps/mobile/.env` file. See
+Public configuration belongs in the repository-root `.env` or `.env.local`, not an
+`apps/mobile/.env` file. See
 [`../../.env.example`](../../.env.example).
 
 ## Development
@@ -34,21 +34,16 @@ vp run dev:client
 The device argument can be omitted when exactly one device is booted or connected. The helper
 compares this checkout's Expo fingerprint and the installed binary with its last install record,
 and reuses a matching client. Otherwise it installs the build for that fingerprint from
-`~/.cache/t3code/native-clients/artifacts`, then the shared task cache, and builds only when
-neither has it. A build runs in the `Mobile Dev Client` workflow (Blacksmith runners with warm
-Gradle and ccache state, and a macOS runner for iOS) when `gh` may dispatch workflows on
-`pingdotgg/t3code` and HEAD is pushed; the helper waits for the client in the shared cache.
-Otherwise, or when HEAD lacks your native edits or `T3_NATIVE_CLIENT_BUILD=local` is set, it builds
-on this machine. Main's client is built there on every native change, so most checkouts hit. One iOS simulator build serves every iPhone and iPad simulator, and one APK per
-ABI (x86_64 or arm64-v8a) serves every emulator and phone of that ABI. Build output goes to the
-log file it prints (`T3_NATIVE_CLIENT_VERBOSE=1` streams it instead). Builds are shared back when
-your task-cache login (`bash infra/task-cache/install.sh`) can write. `T3_NATIVE_CLIENT_CACHE=read`
-skips the upload and `off` skips the shared cache. Physical iPhones still use `vp run ios:dev`.
+`~/.cache/t3code/native-clients/artifacts`, and builds it on this machine when the cache does not
+have it. One iOS simulator build serves every iPhone and iPad simulator, and one APK per ABI
+(x86_64 or arm64-v8a) serves every emulator and phone of that ABI. Build output goes to the log
+file it prints (`SUNBRINGER_NATIVE_CLIENT_VERBOSE=1` streams it instead). Physical iPhones still use
+`vp run ios:dev`.
 
 `--session <name>` installs into an agent-device session opened elsewhere, such as a device pool
 or a cloud simulator, instead of a local device: `vp run mobile:install android --session pool-1
---metro http://<this-machine>:8081`. It uses only the cached build (x86_64 by default; `--abi`
-for ARM) and fails with the next step when no machine has built this fingerprint yet.
+--metro http://<this-machine>:8081`. It installs the cached build (x86_64 by default; `--abi`
+for ARM), building it here first when this machine has not built this fingerprint yet.
 
 For a read-only decision, run `node ../../scripts/mobile-native-client.ts check <ios|android>
 [device]`: exit 0 means compatible, 2 means an install is needed, and 1 means an operational error.
@@ -88,8 +83,8 @@ reduced-capability local build. Personal Team builds omit the widget and share e
 entitlement, and native Sign in with Apple entitlement; builds without this opt-in are unchanged.
 
 ```bash
-T3CODE_IOS_PERSONAL_TEAM=1 \
-T3CODE_IOS_PERSONAL_TEAM_BUNDLE_ID=com.example.t3code.dev \
+SUNBRINGER_IOS_PERSONAL_TEAM=1 \
+SUNBRINGER_IOS_PERSONAL_TEAM_BUNDLE_ID=com.example.t3code.dev \
 vp run ios:dev
 ```
 
@@ -102,8 +97,8 @@ vp run ios:release
 The Personal Team equivalent also needs a unique bundle identifier:
 
 ```bash
-T3CODE_IOS_PERSONAL_TEAM=1 \
-T3CODE_IOS_PERSONAL_TEAM_BUNDLE_ID=com.example.t3code \
+SUNBRINGER_IOS_PERSONAL_TEAM=1 \
+SUNBRINGER_IOS_PERSONAL_TEAM_BUNDLE_ID=com.example.t3code \
 vp run ios:release
 ```
 
@@ -133,10 +128,6 @@ The native lint task runs SwiftLint for Swift plus ktlint and detekt for Kotlin.
 Preview and production variants use Expo fingerprinting so OTA updates only reach binaries with matching native dependencies, config plugins, and patches. CI uses the `preview:dev` profile to reuse a compatible native build when possible.
 
 The development variant uses `appVersion` to avoid recalculating the native fingerprint for each Metro launch manifest. `MOBILE_VERSION_POLICY` can override either default. If you distribute a custom Release build with the development identity and publish OTA updates to it, set `MOBILE_VERSION_POLICY=fingerprint` for both its build and updates. Changing the runtime policy requires a native rebuild for OTA matching; an existing dev client can still load local Metro bundles.
-
-For preview or production EAS environments, set `T3CODE_CLERK_PUBLISHABLE_KEY`,
-`T3CODE_CLERK_JWT_TEMPLATE`, and `T3CODE_RELAY_URL`
-as EAS environment variables. Expo config maps the canonical values into the mobile build.
 
 Create a PR preview dev-client build manually:
 

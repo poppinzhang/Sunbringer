@@ -233,8 +233,8 @@ export function scopedSettingsSource(
     ? "mixed"
     : sources.has("project")
       ? "project"
-      : sources.has("t3.json")
-        ? "t3.json"
+      : sources.has("sunbringer.json")
+        ? "sunbringer.json"
         : "environment";
 }
 
@@ -674,7 +674,9 @@ async function persistScopedSettingsPlan(
       return [
         {
           ...environment,
-          message: m(msg("This environment does not support this setting. Update T3 Code on it.")),
+          message: m(
+            msg("This environment does not support this setting. Update Sunbringer on it."),
+          ),
         },
       ];
     }

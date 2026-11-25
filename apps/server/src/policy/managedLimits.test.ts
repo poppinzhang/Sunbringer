@@ -12,7 +12,6 @@ import * as NetService from "@t3tools/shared/Net";
 
 import * as EnvironmentAuthPolicy from "../auth/EnvironmentAuthPolicy.ts";
 import * as ManagedLimits from "./managedLimits.ts";
-import * as ManagedPolicy from "./ManagedPolicy.ts";
 
 const policy = (limits?: ManagedPolicyDocument["limits"]) => ({
   document: {
@@ -68,7 +67,7 @@ it.effect("binds only the loopback address it approved when remote clients are n
       tailscaleServeEnabled: false,
       privateNetworkOnly: true,
     }).pipe(Effect.flip);
-    assert.include(service.message, "set T3CODE_HOST=127.0.0.1 in its service.env");
+    assert.include(service.message, "set SUNBRINGER_HOST=127.0.0.1 in its service.env");
     assert.equal(yield* bind("localhost", { document: undefined }), "localhost");
     assert.equal(yield* bind(undefined, { document: undefined }), "127.0.0.1");
   }),
@@ -113,20 +112,6 @@ it.effect("allows the clients the policy lists", () =>
     authPolicy: "remote-reachable",
     host: "0.0.0.0",
     tailscaleServeEnabled: true,
-  }),
-);
-
-it.effect("tells clients Connect is off when the policy leaves out remote clients", () =>
-  Effect.gen(function* () {
-    const managed = yield* ManagedPolicy.fromDocument("/test/policy.json", {
-      ...desktopAndLocal.document,
-    });
-    assert.deepEqual(managed.summary?.limits, {
-      clients: ["desktop", "local-browser"],
-      connect: false,
-    });
-    assert.isTrue(ManagedLimits.allowsConnect(policy({ clients: ["remote"] })));
-    assert.isFalse(ManagedLimits.allowsConnect(policy({ connect: false })));
   }),
 );
 

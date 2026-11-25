@@ -14,7 +14,7 @@ import { HttpClient } from "effect/http";
 
 import * as RemoteEnvironmentAuthorization from "../authorization/service.ts";
 import type { PreparedConnection } from "../connection/model.ts";
-import * as ManagedRelay from "../relay/managedRelay.ts";
+import * as Dpop from "../dpop/signer.ts";
 import { type RemoteEnvironmentRequestError } from "../rpc/http.ts";
 import { executeAuthenticatedEnvironmentHttpRequest } from "./environmentHttpAuth.ts";
 
@@ -36,7 +36,7 @@ export class PullRequestDiffCredentialRejectedError extends Schema.TaggedError<P
   get i18nMessage(): MarkedText {
     return [
       msg(
-        "This environment session is no longer valid (invalid_credential). Refresh the page or quit and reopen T3 Code.",
+        "This environment session is no longer valid (invalid_credential). Refresh the page or quit and reopen Sunbringer.",
       ),
     ];
   }
@@ -51,7 +51,7 @@ export const fetchEnvironmentPullRequestDiff = Effect.fn(
 )(function* (input: {
   readonly prepared: PreparedConnection;
   readonly diff: PullRequestDiffInput;
-  readonly signer: Option.Option<ManagedRelay.ManagedRelayDpopSigner["Service"]>;
+  readonly signer: Option.Option<Dpop.DpopSigner["Service"]>;
   readonly remoteAuthorization?: Option.Option<
     RemoteEnvironmentAuthorization.RemoteEnvironmentAuthorization["Service"]
   >;
@@ -92,7 +92,7 @@ export const layer: Layer.Layer<PullRequestDiffLoader, never, HttpClient.HttpCli
   PullRequestDiffLoader,
   Effect.gen(function* () {
     const httpClient = yield* HttpClient.HttpClient;
-    const signer = yield* Effect.serviceOption(ManagedRelay.ManagedRelayDpopSigner);
+    const signer = yield* Effect.serviceOption(Dpop.DpopSigner);
     const remoteAuthorization = yield* Effect.serviceOption(
       RemoteEnvironmentAuthorization.RemoteEnvironmentAuthorization,
     );

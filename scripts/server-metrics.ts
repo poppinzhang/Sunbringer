@@ -848,7 +848,7 @@ const startServer = Effect.fn("serverMetrics.startServer")(function* (
     // Loose refs on purpose: the soak writes them as files, which a reftable store would ignore.
     ["-c", "init.defaultRefFormat=files", "init", "-q", "-b", "main"],
     ["add", "."],
-    ["-c", "user.email=bench@t3.codes", "-c", "user.name=bench", "commit", "-qm", "init"],
+    ["-c", "user.email=bench@sunbringer.local", "-c", "user.name=bench", "commit", "-qm", "init"],
   ]) {
     yield* run("git", args, { cwd: project });
   }
@@ -868,7 +868,7 @@ const startServer = Effect.fn("serverMetrics.startServer")(function* (
   );
   const dropped = new Set([
     "ANTHROPIC_AUTH_TOKEN",
-    "T3CODE_HOME",
+    "SUNBRINGER_HOME",
     "CLAUDE_CONFIG_DIR",
     ...(environment.noAgentScope ? ["XDG_RUNTIME_DIR"] : []),
   ]);
@@ -884,7 +884,7 @@ const startServer = Effect.fn("serverMetrics.startServer")(function* (
     ANTHROPIC_API_KEY: "sk-bench",
     CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1",
     OTEL_SDK_DISABLED: "true",
-    T3CODE_DEV_SEED: "0",
+    SUNBRINGER_DEV_SEED: "0",
     ...options.forge?.env,
   };
   const port = yield* freePort;

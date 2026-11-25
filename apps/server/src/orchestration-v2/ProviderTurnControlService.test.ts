@@ -147,7 +147,6 @@ function layerProjectionStore(
       getThreadShell: () => Effect.die("unused getThreadShell"),
       getThreadTitles: () => Effect.die("unused getThreadTitles"),
       getThreadLinkMetadata: () => Effect.die("unused getThreadLinkMetadata"),
-      findGuestShareThreadId: () => Effect.die("unused findGuestShareThreadId"),
       getThread: () => Effect.die("unused getThread"),
       findThread: () => Effect.die("unused findThread"),
       getSettlementCandidates: () => Effect.die("unused getSettlementCandidates"),
@@ -458,7 +457,7 @@ it.effect("steers a running turn with its sender and the thread's MCP app model 
     assert.equal(steered.length, 1);
     assert.equal(
       steered[0]!.message.text,
-      '[T3 Code: the agent in T3 thread "thread:steer-sender" sent this message, not the user.]\n\nWhat did the app report?',
+      '[Sunbringer: the agent in Sunbringer thread "thread:steer-sender" sent this message, not the user.]\n\nWhat did the app report?',
     );
     assert.deepEqual("appContext" in steered[0]! ? steered[0].appContext : undefined, [
       { key: "mcp_app_turn-item_call-1", text: "Pressed: blue" },

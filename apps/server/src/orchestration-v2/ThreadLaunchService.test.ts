@@ -3034,10 +3034,10 @@ it.live(
         yield* git.execute({ operation: "launch-test", cwd: shop, args });
       }
       yield* fileSystem.writeFileString(
-        path.join(shop, "t3.json"),
+        path.join(shop, "sunbringer.json"),
         JSON.stringify({
           worktreeLayout: {
-            create: `echo create >> "${ran}" && git worktree add -q -b "$T3_WORKTREE_BRANCH" "$T3_WORKTREE_PROJECT_PATH"`,
+            create: `echo create >> "${ran}" && git worktree add -q -b "$SUNBRINGER_WORKTREE_BRANCH" "$SUNBRINGER_WORKTREE_PROJECT_PATH"`,
           },
         }),
       );

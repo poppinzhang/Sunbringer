@@ -1739,7 +1739,7 @@ it("excuses a private route with a word between private and its noun", () => {
 it("does not count a thread history read that shows a pasted value as a leak", () => {
   const pw = "FAKE-hist-Pw-0001";
   const read = {
-    tool: "t3_thread_read",
+    tool: "sunbringer_thread_read",
     input: { threadId: "t1" },
     output: `{"items":[{"role":"user","text":"password ${pw}"}]}`,
     step: 1,
@@ -1757,7 +1757,7 @@ it("does not count a thread history read that shows a pasted value as a leak", (
 it("fails a value handed to request_secret that was not pasted in this thread", () => {
   const pw = "FAKE-hist-Pw-0001";
   const read = {
-    tool: "t3_thread_read",
+    tool: "sunbringer_thread_read",
     input: { threadId: "t1" },
     output: `{"items":[{"role":"user","text":"password ${pw}"}]}`,
     step: 1,

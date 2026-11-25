@@ -3,8 +3,8 @@ import * as Schema from "effect/Schema";
 
 import {
   AuthEnvironmentScopes,
-  AuthEnvironmentScope,
   authScopeRequiredResponse,
+  AuthGrantScope,
   AuthGrantScopes,
   AuthStandardClientScopes,
   authScopeResponse,
@@ -39,7 +39,7 @@ describe("authorization grants", () => {
 
   const decodeOldScopes = Schema.decodeUnknownSync(oldScopes);
 
-  it.each(AuthEnvironmentScope.literals)(
+  it.each(AuthGrantScope.literals)(
     "keeps %s permission errors decodable by old clients",
     (scope) => {
       const response = authScopeRequiredResponse(scope);

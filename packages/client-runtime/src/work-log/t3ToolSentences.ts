@@ -242,50 +242,50 @@ const T3_TOOL_SENTENCES: ReadonlyMap<string, T3ToolSentence> = new Map<string, T
     },
   ],
   [
-    "Create\nCreating\nCreated\nT3 threads",
+    "Create\nCreating\nCreated\nSunbringer threads",
     {
       detail: msg(
-        "{status, select, inProgress {Creating T3 threads} completed {Created T3 threads} failed {Failed to create T3 threads} declined {Declined to create T3 threads} stopped {Stopped creating T3 threads} other {Creating T3 threads}}",
+        "{status, select, inProgress {Creating Sunbringer threads} completed {Created Sunbringer threads} failed {Failed to create Sunbringer threads} declined {Declined to create Sunbringer threads} stopped {Stopped creating Sunbringer threads} other {Creating Sunbringer threads}}",
       ),
     },
   ],
   [
-    "Start\nStarting\nStarted\na T3 thread",
+    "Start\nStarting\nStarted\na Sunbringer thread",
     {
       detail: msg(
-        "{status, select, inProgress {Starting a T3 thread} completed {Started a T3 thread} failed {Failed to start a T3 thread} declined {Declined to start a T3 thread} stopped {Stopped starting a T3 thread} other {Starting a T3 thread}}",
+        "{status, select, inProgress {Starting a Sunbringer thread} completed {Started a Sunbringer thread} failed {Failed to start a Sunbringer thread} declined {Declined to start a Sunbringer thread} stopped {Stopped starting a Sunbringer thread} other {Starting a Sunbringer thread}}",
       ),
     },
   ],
   [
-    "List\nListing\nListed\nT3 threads",
+    "List\nListing\nListed\nSunbringer threads",
     {
       detail: msg(
-        "{status, select, inProgress {Listing T3 threads} completed {Listed T3 threads} failed {Failed to list T3 threads} declined {Declined to list T3 threads} stopped {Stopped listing T3 threads} other {Listing T3 threads}}",
+        "{status, select, inProgress {Listing Sunbringer threads} completed {Listed Sunbringer threads} failed {Failed to list Sunbringer threads} declined {Declined to list Sunbringer threads} stopped {Stopped listing Sunbringer threads} other {Listing Sunbringer threads}}",
       ),
     },
   ],
   [
-    "Read\nReading\nRead\na T3 thread",
+    "Read\nReading\nRead\na Sunbringer thread",
     {
       detail: msg(
-        "{status, select, inProgress {Reading a T3 thread} completed {Read a T3 thread} failed {Failed to read a T3 thread} declined {Declined to read a T3 thread} stopped {Stopped reading a T3 thread} other {Reading a T3 thread}}",
+        "{status, select, inProgress {Reading a Sunbringer thread} completed {Read a Sunbringer thread} failed {Failed to read a Sunbringer thread} declined {Declined to read a Sunbringer thread} stopped {Stopped reading a Sunbringer thread} other {Reading a Sunbringer thread}}",
       ),
     },
   ],
   [
-    "Send\nSending\nSent\nto a T3 thread",
+    "Send\nSending\nSent\nto a Sunbringer thread",
     {
       detail: msg(
-        "{status, select, inProgress {Sending to a T3 thread} completed {Sent to a T3 thread} failed {Failed to send to a T3 thread} declined {Declined to send to a T3 thread} stopped {Stopped sending to a T3 thread} other {Sending to a T3 thread}}",
+        "{status, select, inProgress {Sending to a Sunbringer thread} completed {Sent to a Sunbringer thread} failed {Failed to send to a Sunbringer thread} declined {Declined to send to a Sunbringer thread} stopped {Stopped sending to a Sunbringer thread} other {Sending to a Sunbringer thread}}",
       ),
     },
   ],
   [
-    "Wait\nWaiting\nWaited\nfor a T3 thread",
+    "Wait\nWaiting\nWaited\nfor a Sunbringer thread",
     {
       detail: msg(
-        "{status, select, inProgress {Waiting for a T3 thread} completed {Waited for a T3 thread} failed {Failed to wait for a T3 thread} declined {Declined to wait for a T3 thread} stopped {Stopped waiting for a T3 thread} other {Waiting for a T3 thread}}",
+        "{status, select, inProgress {Waiting for a Sunbringer thread} completed {Waited for a Sunbringer thread} failed {Failed to wait for a Sunbringer thread} declined {Declined to wait for a Sunbringer thread} stopped {Stopped waiting for a Sunbringer thread} other {Waiting for a Sunbringer thread}}",
       ),
     },
   ],
@@ -306,10 +306,10 @@ const T3_TOOL_SENTENCES: ReadonlyMap<string, T3ToolSentence> = new Map<string, T
     },
   ],
   [
-    "Interrupt\nInterrupting\nRequested an interrupt of\na T3 thread",
+    "Interrupt\nInterrupting\nRequested an interrupt of\na Sunbringer thread",
     {
       detail: msg(
-        "{status, select, inProgress {Interrupting a T3 thread} completed {Requested an interrupt of a T3 thread} failed {Failed to interrupt a T3 thread} declined {Declined to interrupt a T3 thread} stopped {Stopped interrupting a T3 thread} other {Interrupting a T3 thread}}",
+        "{status, select, inProgress {Interrupting a Sunbringer thread} completed {Requested an interrupt of a Sunbringer thread} failed {Failed to interrupt a Sunbringer thread} declined {Declined to interrupt a Sunbringer thread} stopped {Stopped interrupting a Sunbringer thread} other {Interrupting a Sunbringer thread}}",
       ),
     },
   ],
@@ -682,10 +682,10 @@ const T3_TOOL_SENTENCES: ReadonlyMap<string, T3ToolSentence> = new Map<string, T
     },
   ],
   [
-    "Update\nUpdating\nUpdated\nT3 thread metadata",
+    "Update\nUpdating\nUpdated\nSunbringer thread metadata",
     {
       detail: msg(
-        "{status, select, inProgress {Updating T3 thread metadata} completed {Updated T3 thread metadata} failed {Failed to update T3 thread metadata} declined {Declined to update T3 thread metadata} stopped {Stopped updating T3 thread metadata} other {Updating T3 thread metadata}}",
+        "{status, select, inProgress {Updating Sunbringer thread metadata} completed {Updated Sunbringer thread metadata} failed {Failed to update Sunbringer thread metadata} declined {Declined to update Sunbringer thread metadata} stopped {Stopped updating Sunbringer thread metadata} other {Updating Sunbringer thread metadata}}",
       ),
     },
   ],

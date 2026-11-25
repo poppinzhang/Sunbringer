@@ -1,7 +1,7 @@
 import {
   BearerConnectionTarget,
   PrimaryConnectionTarget,
-  RelayConnectionTarget,
+  type DirectDpopConnection,
   type PreparedConnection,
 } from "@t3tools/client-runtime/connection";
 import type * as Effect from "effect/Effect";
@@ -31,25 +31,23 @@ import { VoiceSettingsPanel } from "./VoiceSettingsPanel";
 vi.mock(import("../../speech/useEnvironmentSpeechInput"), { spy: true });
 vi.mock(import("../../state/session"), { spy: true });
 
-// The real connection runtime authorizes relay requests with a signed-in cloud session.
+// The real connection runtime signs requests with a DPoP key held in IndexedDB.
 vi.mock("../../connection/runtime", async () => {
-  const [{ ManagedRelay }, rpc, { Atom }, Context, Effect, Layer] = await Promise.all([
-    import("@t3tools/client-runtime/relay"),
+  const [{ DpopSigner }, rpc, { Atom }, Context, Effect, Layer] = await Promise.all([
+    import("@t3tools/client-runtime/dpop"),
     import("@t3tools/client-runtime/rpc"),
     import("effect/reactivity"),
     import("effect/Context"),
     import("effect/Effect"),
     import("effect/Layer"),
   ]);
-  type AuthorizedHttp =
-    import("@t3tools/client-runtime/authorization").AuthorizedRemoteHttpEnvironment;
   // Services resolve by key, and client-runtime does not export this one.
   class RemoteEnvironmentAuthorization extends Context.Service<
     RemoteEnvironmentAuthorization,
     {
-      readonly authorizeDpopHttp: (input: {
-        readonly expectedEnvironmentId: AuthorizedHttp["environmentId"];
-      }) => Effect.Effect<AuthorizedHttp>;
+      readonly authorizeDirectDpopHttp: (
+        connection: DirectDpopConnection,
+      ) => Effect.Effect<Extract<PreparedConnection["httpAuthorization"], { _tag: "Dpop" }>>;
     }
     // @effect-diagnostics-next-line deterministicKeys:off
   >()("@t3tools/client-runtime/authorization/service/RemoteEnvironmentAuthorization") {}
@@ -57,21 +55,17 @@ vi.mock("../../connection/runtime", async () => {
     connectionAtomRuntime: Atom.runtime(
       Layer.mergeAll(
         rpc.layerRemoteHttpClient((input, init) => globalThis.fetch(input, init)),
-        Layer.succeed(ManagedRelay.ManagedRelayDpopSigner, {
+        Layer.succeed(DpopSigner, {
           thumbprint: Effect.succeed("thumbprint"),
           createProof: () => Effect.succeed("proof"),
         }),
         Layer.succeed(RemoteEnvironmentAuthorization, {
-          authorizeDpopHttp: ({ expectedEnvironmentId }) =>
+          authorizeDirectDpopHttp: (directConnection) =>
             Effect.succeed({
-              environmentId: expectedEnvironmentId,
-              label: "MacBook Pro",
-              httpBaseUrl: window.location.origin,
-              httpAuthorization: {
-                _tag: "Dpop",
-                accessToken: "relay-access-token",
-                expiresAtEpochMs: 4_102_444_800_000,
-              },
+              _tag: "Dpop",
+              accessToken: "current-access-token",
+              expiresAtEpochMs: 4_102_444_800_000,
+              directConnection,
             }),
         }),
       ),
@@ -393,11 +387,12 @@ it.each([
   { tier: "accelerated", legacy: false },
   { tier: "cpu", legacy: true },
 ] as const)(
-  "loads relay models using the server tier $tier (legacy: $legacy)",
+  "loads a paired host's models using the server tier $tier (legacy: $legacy)",
   async ({ tier, legacy }) => {
-    const target = new RelayConnectionTarget({
-      environmentId: EnvironmentId.make("voice-relay"),
+    const target = new BearerConnectionTarget({
+      environmentId: EnvironmentId.make("voice-paired"),
       label: "MacBook Pro",
+      connectionId: "voice-paired-connection",
     });
     const prepared = {
       environmentId: target.environmentId,
@@ -408,6 +403,10 @@ it.each([
         _tag: "Dpop" as const,
         accessToken: "stale-access-token",
         expiresAtEpochMs: 4_102_444_800_000,
+        directConnection: {
+          connectionId: target.connectionId,
+          httpBaseUrl: window.location.origin,
+        },
       },
       target,
     };
@@ -495,7 +494,7 @@ it.each([
     );
     await vi.waitFor(() => expect(authorizations.length + notify.mock.calls.length).not.toBe(0));
     expect(notify).not.toHaveBeenCalled();
-    expect(authorizations).toEqual(["DPoP relay-access-token"]);
+    expect(authorizations).toEqual(["DPoP current-access-token"]);
     const region = screen.getByRole("region", { name: "Transcription models" });
     await vi.waitFor(() => expect(region.element().textContent).toContain("CPU pick"));
     if (legacy) {

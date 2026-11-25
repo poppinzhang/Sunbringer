@@ -162,16 +162,16 @@ export const repointLaunchers = Effect.fn("cloud.service_launcher_client.repoint
     const platform = yield* HostProcess.Platform;
     if (platform !== "linux" && platform !== "darwin") return;
     const installBinDir =
-      environment["T3CODE_INSTALL_BIN_DIR"] ||
+      environment["SUNBRINGER_INSTALL_BIN_DIR"] ||
       (environment["HOME"] ? path.join(environment["HOME"], ".local", "bin") : undefined);
     const candidates = new Set<string>();
-    if (installBinDir !== undefined) candidates.add(path.join(installBinDir, "t3"));
+    if (installBinDir !== undefined) candidates.add(path.join(installBinDir, "sunbringer"));
     const searchPath = environment["PATH"] ?? "";
     const cwd = yield* HostProcess.WorkingDirectory;
     for (const directory of searchPath.split(":")) {
       // Like the shell, an empty entry of a nonempty PATH is the working directory.
       if (directory.length === 0 && searchPath.length === 0) continue;
-      const candidate = path.join(directory || cwd, "t3");
+      const candidate = path.join(directory || cwd, "sunbringer");
       if (directory.length === 0) {
         // The shell passes over a working-directory entry it cannot run and keeps searching.
         const info = yield* fs.stat(candidate).pipe(Effect.option);

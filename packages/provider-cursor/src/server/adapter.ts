@@ -334,7 +334,7 @@ export function makeCursorAgentOptions(input: {
   const mcpServers = cursorMcpServers(input.mcpSession);
   return {
     model: cursorSdkModelSelection(input.modelSelection, input.models, input.sdkModels),
-    name: `T3 Code ${input.threadId}`,
+    name: `Sunbringer ${input.threadId}`,
     mode: input.runtimePolicy.interactionMode === "plan" ? "plan" : "agent",
     ...(input.apiKey === undefined ? {} : { apiKey: input.apiKey }),
     local: {
@@ -1010,7 +1010,7 @@ interface ActiveCursorTurn {
 type CursorTurnUsage = NonNullable<Extract<InteractionUpdate, { type: "turn-ended" }>["usage"]>;
 
 const CURSOR_BACKGROUND_WAIT_INSTRUCTIONS =
-  "To wait for a background shell you started (tests, a build), call `t3_background_wait` with its shell ID or pid before you end your turn. It returns at once, and T3 wakes you when the shell exits. Do not mark work you leave running, or PRs.";
+  "To wait for a background shell you started (tests, a build), call `sunbringer_background_wait` with its shell ID or pid before you end your turn. It returns at once, and T3 wakes you when the shell exits. Do not mark work you leave running, or PRs.";
 
 const BACKGROUND_SHELL_DETAIL_COMMAND_MAX_LENGTH = 200;
 
@@ -2936,7 +2936,6 @@ export const makeCursorAdapterV2 = Effect.fn("makeCursorAdapterV2")(function* (
             });
           }
           const runtimeInstructions = buildRuntimeInstructions({
-            agentFeedback: mcpServers === undefined ? "off" : (turnInput.agentFeedback ?? "off"),
             harness: "Cursor",
             model: turnInput.modelSelection.model,
             runtimePolicy: turnInput.runtimePolicy,
