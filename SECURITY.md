@@ -12,7 +12,7 @@ in their area.
 
 ## The model in one paragraph
 
-An environment is a T3 server running as an OS user. It is not a sandbox: it
+An environment is a Sunbringer server running as an OS user. It is not a sandbox: it
 intentionally runs agents and terminals with that user's privileges. Clients
 gain authority by pairing, which issues a scoped session. A full-scope session
 equals a shell as the server's OS user, because `terminal:operate` opens a PTY
@@ -29,7 +29,7 @@ revocation and ceilings hold, not what a full-scope session can do once issued.
 | Narrow client                                                                         | Pairing link with explicit scopes                                        | Only the RPCs and routes its scopes allow. Can never widen its own grant.                                             |
 | MCP client (outside agent, subject `mcp-client`)                                      | OAuth on `/mcp`                                                          | Only `/mcp`, within a read-only grant or a runtime-mode ceiling. Every other route rejects it.                        |
 | Linked environment (peer link)                                                        | OAuth client `t3code-peer-link`                                          | Work it starts carries an immutable `linkOrigin` and never exceeds the access it was paired with.                     |
-| Agent run by T3                                                                       | Thread's runtime mode and thread credential                              | Within its runtime mode, managed policy, and the MCP access declared per tool.                                        |
+| Agent run by Sunbringer                                                               | Thread's runtime mode and thread credential                              | Within its runtime mode, managed policy, and the MCP access declared per tool.                                        |
 | Signed asset URL                                                                      | Minted with `filesystem:read`                                            | One file, by device and inode identity, until it expires.                                                             |
 | Webhook sender                                                                        | A task's webhook URL, plus its signing secret when the task requires one | Start that one task's run with content of its choosing. Nothing in the request is trusted beyond the signature check. |
 | Managed policy                                                                        | Admin-deployed file, read at startup                                     | Ceilings and locks the server enforces for every client.                                                              |
@@ -102,8 +102,8 @@ revocation and ceilings hold, not what a full-scope session can do once issued.
   requires, or has its values treated as anything but untrusted data. Tokens in
   or around the request remain covered by 6.
 - The machine owner's own configuration. Whoever sets a provider's launch
-  arguments, an environment variable, a binary path, or the endpoint or file T3
-  Code points at already holds the OS account, so a value weakening their own
+  arguments, an environment variable, a binary path, or the endpoint or file
+  Sunbringer points at already holds the OS account, so a value weakening their own
   setup is their choice. It is a finding when a narrower principal can set it
   for them (a narrow client, an MCP client, an agent below full access,
   repository content), when [managed policy](docs/user/managed-policy.md) locks
@@ -154,7 +154,7 @@ revocation and ceilings hold, not what a full-scope session can do once issued.
 - Check the reported commit against `main`. Reports often trail fixes.
 - Prove a finding with a failing test at the lowest layer that shows it, as
   [Verifying](AGENTS.md#verifying) describes. Do not run a PoC against
-  `~/.t3/userdata` or any live environment; use a dev server on seeded data.
+  `~/.sunbringer/userdata` or any live environment; use a dev server on seeded data.
 - Treat report attachments as untrusted. Extract them into an empty directory
   outside the worktree and read PoCs before running anything.
 - Fix confirmed findings rather than filing them. Keep advisory details out of
